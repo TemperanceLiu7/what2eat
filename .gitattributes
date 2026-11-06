@@ -1,0 +1,6 @@
+# 统一用 LF，Windows 上也不会出现 CRLF 警告，云端（Linux）构建更稳
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.ico binary

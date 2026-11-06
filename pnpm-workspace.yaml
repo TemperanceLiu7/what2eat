@@ -1,0 +1,5 @@
+# Flat node_modules: avoids ESM resolution failures caused by pnpm junctions on Windows
+nodeLinker: hoisted
+
+allowBuilds:
+  esbuild: false
