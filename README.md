@@ -112,43 +112,44 @@ export async function toggleFavorite(id) {
 1. **HTTP 下手机的部分能力不可用**。`capture` 拍照、摇一摇的 `DeviceMotionEvent`、PWA 安装都要求 HTTPS（安全上下文）。局域网 `http://` 地址只能演示界面和按钮流程。正式演示建议用 Cloudflare Tunnel 或 Caddy 自动证书挂个域名，二维码一次搞定。
 2. **数据存在浏览器 localStorage**，换设备/清缓存就没了。图片压到 900px 是为了不撑爆 5MB 配额，存十几条打卡没问题。
 
-## 部署到 Cloudflare Workers（改本地 → push → 网址自动更新）
+## 部署到 Cloudflare Pages（改本地 → push → 网址自动更新）
 
-纯静态站点，**不需要租服务器**，也不需要买域名。网址形如 `https://what2eat.<你的子域>.workers.dev`。
+纯静态站点，**不需要租服务器**，也不需要买域名。网址形如 `https://<项目名>.pages.dev`。
 
-> 为什么用 Workers 而不是 Pages：`pages.dev` 的好名字基本被占完了，而 Worker 名字只在自己账号下唯一，随便起。
+> **为什么是 Pages 而不是 Workers**：`workers.dev` 的子域是**账号级**的（`<worker>.<账号子域>.workers.dev`），
+> 改一次会连带影响账号下所有项目；`pages.dev` 的地址是**项目级**的，每个项目独立，互不干扰。
+>
+> 也试过 Worker + 静态资源方案，能跑通（`wrangler.jsonc` + `assets.directory` +
+> `not_found_handling: single-page-application`），但因为上面这个原因放弃，仓库里的 `wrangler.jsonc` 已删除。
 
 ### 步骤
 
 1. 注册 <https://dash.cloudflare.com>（邮箱即可，不用绑卡）。
-2. **Workers & Pages** → `Create` → `Import a repository` → 授权 GitHub、选中 `what2eat` 仓库。
-3. 填配置：
-   - Project name：`what2eat`（**必须和 `wrangler.jsonc` 里的 `name` 一致**）
+2. **Workers & Pages** → `Create` → **`Pages` 标签** → **`Connect to Git`**。
+3. 授权 GitHub（**Only select repositories** 只勾 `what2eat` 这一个），回到 Cloudflare 选中 `Ares5807/what2eat`。
+4. 填配置：
+   - Project name：**换个没被占用的名字**（`what2eat` 已被别人占用，试 `what2eat-app`、`getwhat2eat`、`what2eatcn`）
    - Production branch：`main`
+   - Framework preset：`Vite`
    - Build command：`pnpm build`
-   - Deploy command：`npx wrangler deploy`（默认值，别改）
+   - Build output directory：`dist`
    - 环境变量：`NODE_VERSION` = `22`
-4. `Deploy`，等 1~2 分钟。
-5. 网址：`https://what2eat.<你的子域>.workers.dev`（子域在 Workers & Pages 首页能看到）。
+5. `Save and Deploy`，等 1~2 分钟。
+6. 网址 = `https://<你填的项目名>.pages.dev`。
 
 之后每次 push 自动重新部署。
 
-### 关键文件：`wrangler.jsonc`
+### 关键文件：`public/_redirects`
 
-Worker 本身是个跑 JS 的东西，它不知道怎么发静态文件，必须靠这份配置告诉它：
+Pages 靠这个文件做 SPA 回退，否则直接访问 `/vote`、`/me` 会 404：
 
-```jsonc
-{
-  "name": "what2eat",              // 必须等于 Cloudflare 上的项目名
-  "compatibility_date": "2025-06-01",
-  "assets": {
-    "directory": "./dist",          // Vite 的构建产物
-    "not_found_handling": "single-page-application"   // 深链接回退到 index.html
-  }
-}
+```
+/* /index.html 200
 ```
 
-少了 `assets` 会报 `Missing entry-point to Worker script or to assets directory`；少了 `not_found_handling`，直接访问 `/vote` 会 404。
+> 注意：这行在 **Pages** 里是标准写法；但放到 **Workers** 的静态资源里会报
+> `Infinite loop detected in this rule`（Workers 会剥 `.html` 导致自循环）。
+> 所以这两个方案不能混用，本项目统一走 Pages。
 
 ### 其他已配好的东西
 
@@ -157,14 +158,11 @@ Worker 本身是个跑 JS 的东西，它不知道怎么发静态文件，必须
 | `package.json` 的 `packageManager` | 云端按 pnpm 11.7.0 构建，避免版本不一致装不上 |
 | `vite.config.js` | base 就是 `/`，根路径部署，不用为子路径做任何事 |
 
-> 注意：**不要**再放 `_redirects`。`/* /index.html 200` 会和 `not_found_handling: single-page-application` 冲突，
-> 部署时直接报 `Infinite loop detected in this rule`。SPA 回退只保留 `wrangler.jsonc` 里那一处就够了。
-
 ### 注意点
 
 | 事项 | 说明 |
 |---|---|
-| 项目名 | Worker 名只在本账号内唯一，重名也没关系；网址里的 `<子域>` 由账号决定 |
+| 项目名 | `pages.dev` 子域全球唯一，被占了换一个；**项目名和仓库名可以不一样** |
 | 构建失败 | 多半是 Node / pnpm 版本，把日志发我，改环境变量即可 |
 | 构建产物 | `dist/` 在 `.gitignore` 里，云端自己构建，不要提交 |
 | 私有仓库 | Cloudflare 允许部署私有仓库，不必公开 |
@@ -172,9 +170,9 @@ Worker 本身是个跑 JS 的东西，它不知道怎么发静态文件，必须
 
 ### 备选：Vercel
 
-`vercel.json` 还留着。注册 <https://vercel.com> 导入仓库即可，网址 `xxx.vercel.app`。不想用直接删这个文件，不影响 Cloudflare。
+`vercel.json` 还留着。注册 <https://vercel.com> 导入仓库即可，网址 `xxx.vercel.app`，同样是项目级、互不影响。不想用直接删这个文件。
 
-> 建议两个都挂上（各 5 分钟）：国内访问 `workers.dev` 和 `vercel.app` 都不算稳，答辩当天哪个能打开用哪个。
+> 建议两个都挂上（各 5 分钟）：国内访问 `pages.dev` 和 `vercel.app` 都不算稳，答辩当天哪个能打开用哪个。
 
 ### 一个必须知道的边界
 
