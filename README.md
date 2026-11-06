@@ -154,9 +154,11 @@ Worker 本身是个跑 JS 的东西，它不知道怎么发静态文件，必须
 
 | 文件 | 作用 |
 |---|---|
-| `public/_redirects` | `/* /index.html 200`，Pages 路线用的 SPA 回退；Workers 路线靠 `not_found_handling`，两者不冲突 |
 | `package.json` 的 `packageManager` | 云端按 pnpm 11.7.0 构建，避免版本不一致装不上 |
 | `vite.config.js` | base 就是 `/`，根路径部署，不用为子路径做任何事 |
+
+> 注意：**不要**再放 `_redirects`。`/* /index.html 200` 会和 `not_found_handling: single-page-application` 冲突，
+> 部署时直接报 `Infinite loop detected in this rule`。SPA 回退只保留 `wrangler.jsonc` 里那一处就够了。
 
 ### 注意点
 
