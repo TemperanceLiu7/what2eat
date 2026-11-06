@@ -112,29 +112,49 @@ export async function toggleFavorite(id) {
 1. **HTTP 下手机的部分能力不可用**。`capture` 拍照、摇一摇的 `DeviceMotionEvent`、PWA 安装都要求 HTTPS（安全上下文）。局域网 `http://` 地址只能演示界面和按钮流程。正式演示建议用 Cloudflare Tunnel 或 Caddy 自动证书挂个域名，二维码一次搞定。
 2. **数据存在浏览器 localStorage**，换设备/清缓存就没了。图片压到 900px 是为了不撑爆 5MB 配额，存十几条打卡没问题。
 
-## 部署到 Cloudflare Pages（改本地 → push → 网址自动更新）
+## 部署到 Cloudflare Workers（改本地 → push → 网址自动更新）
 
-纯静态站点，**不需要租服务器**。网址是 `https://<项目名>.pages.dev`，不带账号名。
+纯静态站点，**不需要租服务器**，也不需要买域名。网址形如 `https://what2eat.<你的子域>.workers.dev`。
+
+> 为什么用 Workers 而不是 Pages：`pages.dev` 的好名字基本被占完了，而 Worker 名字只在自己账号下唯一，随便起。
 
 ### 步骤
 
 1. 注册 <https://dash.cloudflare.com>（邮箱即可，不用绑卡）。
-2. 左侧 **Workers & Pages** → `Create` → **Pages** → **Connect to Git** → 授权 GitHub、选中仓库。
-3. 构建配置照抄：
-   - Framework preset：`Vite`
+2. **Workers & Pages** → `Create` → `Import a repository` → 授权 GitHub、选中 `what2eat` 仓库。
+3. 填配置：
+   - Project name：`what2eat`（**必须和 `wrangler.jsonc` 里的 `name` 一致**）
+   - Production branch：`main`
    - Build command：`pnpm build`
-   - Build output directory：`dist`
+   - Deploy command：`npx wrangler deploy`（默认值，别改）
    - 环境变量：`NODE_VERSION` = `22`
-4. `Save and Deploy`，等 1~2 分钟。
-5. 网址 = `https://<项目名>.pages.dev` —— 项目名在第 3 步自己填，填 `what2eat` 就是 `what2eat.pages.dev`。
+4. `Deploy`，等 1~2 分钟。
+5. 网址：`https://what2eat.<你的子域>.workers.dev`（子域在 Workers & Pages 首页能看到）。
 
 之后每次 push 自动重新部署。
 
-### 已经配好的东西
+### 关键文件：`wrangler.jsonc`
+
+Worker 本身是个跑 JS 的东西，它不知道怎么发静态文件，必须靠这份配置告诉它：
+
+```jsonc
+{
+  "name": "what2eat",              // 必须等于 Cloudflare 上的项目名
+  "compatibility_date": "2025-06-01",
+  "assets": {
+    "directory": "./dist",          // Vite 的构建产物
+    "not_found_handling": "single-page-application"   // 深链接回退到 index.html
+  }
+}
+```
+
+少了 `assets` 会报 `Missing entry-point to Worker script or to assets directory`；少了 `not_found_handling`，直接访问 `/vote` 会 404。
+
+### 其他已配好的东西
 
 | 文件 | 作用 |
 |---|---|
-| `public/_redirects` | `/* /index.html 200` —— SPA 回退，刷新 `/vote`、`/me` 这类深链接不会 404 |
+| `public/_redirects` | `/* /index.html 200`，Pages 路线用的 SPA 回退；Workers 路线靠 `not_found_handling`，两者不冲突 |
 | `package.json` 的 `packageManager` | 云端按 pnpm 11.7.0 构建，避免版本不一致装不上 |
 | `vite.config.js` | base 就是 `/`，根路径部署，不用为子路径做任何事 |
 
@@ -142,21 +162,21 @@ export async function toggleFavorite(id) {
 
 | 事项 | 说明 |
 |---|---|
-| 项目名 | `pages.dev` 子域名全球唯一，被占了换一个（`campus-eat-demo`、`eatnow-2026`） |
+| 项目名 | Worker 名只在本账号内唯一，重名也没关系；网址里的 `<子域>` 由账号决定 |
 | 构建失败 | 多半是 Node / pnpm 版本，把日志发我，改环境变量即可 |
 | 构建产物 | `dist/` 在 `.gitignore` 里，云端自己构建，不要提交 |
 | 私有仓库 | Cloudflare 允许部署私有仓库，不必公开 |
-| 想要 `www.xxx.com` | 买个域名（`.top` 首年十几块），项目设置里 Add Domain，自动签发 HTTPS。答辩不必买 |
+| 想要 `www.xxx.com` | 买个域名（`.top` 首年十几块），项目设置里 Add custom domain，自动签发 HTTPS。答辩不必买 |
 
 ### 备选：Vercel
 
 `vercel.json` 还留着。注册 <https://vercel.com> 导入仓库即可，网址 `xxx.vercel.app`。不想用直接删这个文件，不影响 Cloudflare。
 
-> 建议两个都挂上（各 5 分钟）：国内访问 `pages.dev` 和 `vercel.app` 都不算稳，答辩当天哪个能打开用哪个。
+> 建议两个都挂上（各 5 分钟）：国内访问 `workers.dev` 和 `vercel.app` 都不算稳，答辩当天哪个能打开用哪个。
 
 ### 一个必须知道的边界
 
-Cloudflare Pages / Vercel 只托管**静态文件，跑不了 Python**。等你接 Django 后端时，前端继续放这里，后端要另外部署（Railway、Render、PythonAnywhere 都有免费额度），再把接口地址配成环境变量。现在这版没有后端，完全够用。
+Cloudflare / Vercel 只托管**静态文件，跑不了 Python**。等你接 Django 后端时，前端继续放这里，后端要另外部署（Railway、Render、PythonAnywhere 都有免费额度），再把接口地址配成环境变量。现在这版没有后端，完全够用。
 
 ## 自己改代码
 
