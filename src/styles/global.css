@@ -4,16 +4,78 @@
   box-sizing: border-box;
 }
 
+/* ==========================================================================
+   设计令牌 Design Tokens
+   页面样式只引用这一层变量，不再散落颜色 / 间距 / 阴影字面量。
+   顺序：品牌色 → 表面 → 文字 → 分隔线 → 圆角 → 间距 → 阴影 → 字号 → 动效
+   ========================================================================== */
+
 :root {
-  --brand: #ff7a45;
-  --brand-2: #ffb020;
-  --bg: #f6f7fb;
-  --ink: #1f2329;
-  --muted: #8a9099;
+  /* ---------- 1. 品牌色（主色 + 辅色） ---------- */
+  --brand: #ff7a45; /* 主色 */
+  --brand-strong: #e86a38; /* 主色深一档：按压 / 强调 */
+  --brand-2: #ffb020; /* 辅色：琥珀，用于排行、次强调 */
+  --brand-2-deep: #b0752f; /* 辅色上的正文，保证对比度 */
+  --brand-soft: #fff1ea; /* 主色浅底：标签、选中态背景 */
+  --brand-line: #ffd2bd; /* 主色描边：hover */
+  --brand-line-soft: #ffe7d9; /* 主色描边：常态 */
+  --brand-grad: linear-gradient(135deg, #ff8a5c, var(--brand));
+  --brand-glow: rgba(255, 122, 69, 0.28); /* 主色光晕，阴影和焦点环共用 */
+
+  /* ---------- 2. 背景 / 表面 ---------- */
+  --bg: #f6f7fb; /* 页面底色 */
+  --surface: #fff; /* 卡片、浮层 */
+  --surface-soft: #f3f4f7; /* 浅灰填充：标签、序号块 */
+  --surface-warm: linear-gradient(160deg, #fff8f3 0%, #fffdfa 55%, #fff 100%);
+
+  /* ---------- 3. 文字 ---------- */
+  --ink: #1f2329; /* 主文字 */
+  --ink-soft: #4a5160; /* 次级文字：店铺名、标签 */
+  --ink-quiet: #6b7280; /* 弱化文字：空状态标题 */
+  --muted: #8a9099; /* 说明文字 */
+
+  /* ---------- 4. 分隔线 ---------- */
   --line: #edeff3;
-  --radius: 18px;
+  --line-scroll: #dcdfe6;
+  --line-scroll-hover: #c8ccd4;
+
+  /* ---------- 5. 圆角 ---------- */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --radius-pill: 999px;
+  --radius: var(--radius-lg); /* 兼容早期引用，等价于 lg */
+
+  /* ---------- 6. 间距阶梯（4 / 8 / 12 / 16 / 24 / 32） ---------- */
+  --space-4: 4px;
+  --space-8: 8px;
+  --space-12: 12px;
+  --space-16: 16px;
+  --space-24: 24px;
+  --space-32: 32px;
+
+  /* ---------- 7. 阴影（两级高度 + 品牌光晕） ---------- */
   --shadow-sm: 0 2px 8px rgba(31, 35, 41, 0.05);
   --shadow: 0 10px 30px rgba(31, 35, 41, 0.08);
+  --shadow-brand: 0 6px 16px var(--brand-glow);
+
+  /* ---------- 8. 字号阶梯 ---------- */
+  --fs-xs: 12px;
+  --fs-sm: 13px;
+  --fs-base: 14px;
+  --fs-md: 16px;
+  --fs-lg: 18px;
+  --fs-xl: 24px;
+  --fs-2xl: 34px;
+
+  /* ---------- 9. 动效节奏 ---------- */
+  --ease-out: cubic-bezier(0.22, 0.9, 0.28, 1);
+  --ease-back: cubic-bezier(0.2, 0.9, 0.25, 1.18); /* 带轻微回弹 */
+  --dur-fast: 0.18s;
+  --dur-base: 0.28s;
+  --dur-slow: 0.52s;
+
+  /* ---------- 10. 布局 ---------- */
   --page-w: 1120px;
 }
 
@@ -38,6 +100,9 @@ body {
  * 必须写在 html:root 上。Vant 在 :root 里就把 --van-button-primary-background 算成了
  * var(--van-primary-color) 的具体值，写在 body 上只影响 body 子树，改不动按钮。
  * html:root 的优先级（0,1,1）高于 :root（0,1,0），也不依赖打包顺序。
+ *
+ * 注意：这一段里保留主色字面量是有意为之 —— 组件库在打包时就把这些值算进了自己的变量，
+ * 交给 var(--brand) 反而容易被加载顺序影响；改主色时这里和上面第 1 组要一起改。
  */
 html:root {
   --el-color-primary: #ff7a45;
@@ -73,7 +138,7 @@ button {
 /* ---------- 通用布局 ---------- */
 
 .page {
-  width: min(var(--page-w), 100% - 48px);
+  width: min(var(--page-w), calc(100% - var(--space-24) * 2));
   margin: 0 auto;
   padding: 28px 0 64px;
 }
@@ -86,22 +151,22 @@ button {
 }
 
 .card {
-  background: #fff;
-  border-radius: var(--radius);
+  background: var(--surface);
+  border-radius: var(--radius-lg);
   box-shadow: var(--shadow-sm);
   padding: 22px;
 }
 
 @media (max-width: 820px) {
   .card {
-    padding: 16px;
+    padding: var(--space-16);
     border-radius: 16px;
   }
 }
 
 .muted {
   color: var(--muted);
-  font-size: 13px;
+  font-size: var(--fs-sm);
   line-height: 1.6;
 }
 
@@ -109,16 +174,16 @@ button {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 12px;
+  gap: var(--space-12);
+  margin-bottom: var(--space-12);
 }
 
 .section-head h2 {
-  font-size: 18px;
+  font-size: var(--fs-lg);
 }
 
 .section-head .sub {
-  font-size: 12px;
+  font-size: var(--fs-xs);
   color: var(--muted);
 }
 
@@ -126,40 +191,40 @@ button {
   padding: 40px 0;
   text-align: center;
   color: var(--muted);
-  font-size: 14px;
+  font-size: var(--fs-base);
 }
 
 .empty .emoji {
   display: block;
   font-size: 30px;
-  margin-bottom: 8px;
+  margin-bottom: var(--space-8);
 }
 
 .chip {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 8px 14px;
-  border-radius: 999px;
+  padding: var(--space-8) 14px;
+  border-radius: var(--radius-pill);
   border: 1px solid var(--line);
-  background: #fff;
-  color: #4a5160;
-  font-size: 14px;
+  background: var(--surface);
+  color: var(--ink-soft);
+  font-size: var(--fs-base);
   line-height: 1;
-  transition: all 0.18s ease;
+  transition: all var(--dur-fast) var(--ease-out);
   white-space: nowrap;
 }
 
 .chip:hover {
-  border-color: #ffd2bd;
+  border-color: var(--brand-line);
   color: var(--brand);
 }
 
 .chip.active {
-  background: linear-gradient(135deg, #ff8a5c, #ff7a45);
+  background: var(--brand-grad);
   border-color: transparent;
   color: #fff;
-  box-shadow: 0 6px 16px rgba(255, 122, 69, 0.28);
+  box-shadow: var(--shadow-brand);
 }
 
 /* ---------- 滚动条（仅桌面可见） ---------- */
@@ -170,13 +235,13 @@ button {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #dcdfe6;
-  border-radius: 999px;
+  background: var(--line-scroll);
+  border-radius: var(--radius-pill);
   border: 3px solid var(--bg);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #c8ccd4;
+  background: var(--line-scroll-hover);
 }
 
 /* Toast 里用到的过渡，放在全局避免被 scoped 影响 */

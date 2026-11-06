@@ -1,0 +1,11 @@
+# Render 免费实例用的依赖（在 requirements.txt 基础上加云端所需）
+-r requirements.txt
+
+# PostgreSQL 驱动（Django 的 postgresql backend 只认 psycopg）
+psycopg[binary]>=3.2
+
+# WSGI 服务器
+gunicorn>=23.0
+
+# Render 免费实例没有 Nginx，用 WhiteNoise 直接由进程发静态文件
+whitenoise>=6.7

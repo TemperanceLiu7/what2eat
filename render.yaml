@@ -1,0 +1,53 @@
+# Render Blueprint：一条命令把这个后端部署到 Render 免费实例
+#
+# 用法：把仓库推到 GitHub 后，在 Render 里 New → Blueprint，选中本仓库，
+# Render 会读这个文件自动建服务。数据库用 Neon（外部），不在这里创建。
+#
+# 需要你自己填的环境变量（sync: false）：
+#   DATABASE_URL        Neon 给的连接串（postgresql://...）
+#   DEMO_ADMIN_PASSWORD 演示后台账号 admin 的密码
+#
+# 注意：服务名 what2eat-api 决定域名，想改就改 name（域名会跟着变）。
+
+services:
+  - type: web
+    name: what2eat-api
+    runtime: python
+    plan: free
+    rootDir: backend
+    buildCommand: >-
+      pip install -r requirements-render.txt &&
+      python manage.py collectstatic --no-input &&
+      python manage.py migrate --no-input &&
+      python manage.py seed --admin
+    startCommand: >-
+      gunicorn config.wsgi:application
+      --bind 0.0.0.0:$PORT
+      --workers 2 --threads 4 --timeout 60 --access-logfile -
+    healthCheckPath: /api/dishes/
+    envVars:
+      - key: DJANGO_ENV
+        value: prod
+      - key: PYTHON_VERSION
+        value: 3.12.7
+      - key: DB_ENGINE
+        value: postgres
+      - key: DB_SSLMODE
+        value: require
+
+      # 自动生成一个强随机 SECRET_KEY
+      - key: SECRET_KEY
+        generateValue: true
+
+      # 生产必须非空；.onrender.com 前面的点表示放行所有子域
+      - key: ALLOWED_HOSTS
+        value: .onrender.com,localhost,127.0.0.1
+
+      # 前端站点（Cloudflare Pages），跨域白名单
+      - key: CORS_ALLOWED_ORIGINS
+        value: https://what2eatt.pages.dev
+
+      - key: DATABASE_URL
+        sync: false
+      - key: DEMO_ADMIN_PASSWORD
+        sync: false

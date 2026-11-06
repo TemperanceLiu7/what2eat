@@ -1,0 +1,9 @@
+# 生产额外依赖：MySQL 驱动 + WSGI 服务器
+# 安装：pip install -r requirements-prod.txt
+#   mysqlclient 需要系统里有 MySQL 客户端头文件：
+#     Debian/Ubuntu: apt install python3-dev default-libmysqlclient-dev build-essential
+#     macOS:         brew install mysql pkg-config
+#   装不上时可用纯 Python 的 PyMySQL 替代（见 README「生产部署」）
+-r requirements.txt
+mysqlclient>=2.2
+gunicorn>=22.0

@@ -2,7 +2,17 @@
 
 一个**网址**，同时给电脑和手机用：宽屏进来是 Element Plus 的桌面布局（顶部导航 + 左右分栏），窄屏或手机进来是 Vant 的移动布局（底部 TabBar + 单列卡片）。后端接口用本地模拟数据顶替，不需要启动 Django 就能完整演示。
 
-## 已经能跑的地址
+## 线上地址
+
+# <https://what2eatt.pages.dev>
+
+<img src="docs/qrcode.png" alt="扫码打开" width="180" />
+
+部署在 Cloudflare Pages：GitHub 仓库 `Ares5807/what2eat`，push 到 `main` 自动构建发布。
+
+> 注：国内访问 `pages.dev` 偶尔会 DNS 抽风（打不开），换手机流量或等一会儿重试即可。
+
+## 本地地址
 
 - 电脑：<http://localhost:5180>
 - 手机：`http://10.6.60.42:5180`（手机和电脑连同一个 Wi-Fi）
@@ -11,9 +21,9 @@
 
 ## 怎么验证「同一个网址，两套界面」
 
-1. 电脑浏览器打开 <http://localhost:5180>，看到的是顶部横向导航 + 左推荐右人气榜。
+1. 电脑浏览器打开线上地址或 <http://localhost:5180>，看到的是顶部横向导航 + 左推荐右人气榜。
 2. 把窗口拖窄到 820px 以下（或者按 F12 → 切换设备工具栏选 iPhone），**不刷新**，会实时切成手机布局：头部变矮、底部出现 TabBar、卡片变单列。
-3. 手机扫码/输入上面那个局域网地址，打开的是同一个 URL、同一份代码。
+3. 手机扫码打开线上地址，是同一个 URL、同一份代码。
 
 切换逻辑在 `src/composables/useIsMobile.js`，用 `matchMedia('(max-width: 820px)')`，不是 UA 判断——所以 iPad 分屏、旋转屏幕都能正确响应，分享出去的链接也永远自适配当前设备。
 
@@ -125,19 +135,28 @@ export async function toggleFavorite(id) {
 ### 步骤
 
 1. 注册 <https://dash.cloudflare.com>（邮箱即可，不用绑卡）。
-2. **Workers & Pages** → `Create` → **`Pages` 标签** → **`Connect to Git`**。
-3. 授权 GitHub（**Only select repositories** 只勾 `what2eat` 这一个），回到 Cloudflare 选中 `Ares5807/what2eat`。
-4. 填配置：
-   - Project name：**换个没被占用的名字**（`what2eat` 已被别人占用，试 `what2eat-app`、`getwhat2eat`、`what2eatcn`）
+2. **Workers & Pages** → `Create application`。
+3. 关键：新版控制台默认把人往 Worker 流程带（写着 "Configure your **Worker** project" 的那个就是），
+   要往下翻，点那行灰色小字 **"Need to use the legacy Pages workflow? → Continue to Pages"**。
+   这一步没点对，就会莫名其妙建出一个 Worker。
+4. 授权 GitHub（**Only select repositories** 只勾 `what2eat`），选中 `Ares5807/what2eat`。
+5. 填配置：
+   - Project name：**`what2eatt`**（`what2eat` 已被别人占用；项目名 = 网址，创建后**不能改**）
    - Production branch：`main`
-   - Framework preset：`Vite`
+   - Framework preset：**`None`**（预设列表里没有纯 Vite；选 `Vue` 也行，反正下面手填）
    - Build command：`pnpm build`
    - Build output directory：`dist`
    - 环境变量：`NODE_VERSION` = `22`
-5. `Save and Deploy`，等 1~2 分钟。
-6. 网址 = `https://<你填的项目名>.pages.dev`。
+6. `Save and Deploy`，等 1~2 分钟。
+7. 网址 = `https://<项目名>.pages.dev`。
 
 之后每次 push 自动重新部署。
+
+> **坑一**：预设默认会选成 `VitePress`（名字像 Vite），输出目录 `.vitepress/dist`，直接构建失败。
+>
+> **坑二**：`*.pages.dev` 子域名创建后**无法修改**，改项目名也不会改域名。
+> 官方文档原话："`*.pages.dev` subdomains currently cannot be changed. If you need to change your
+> `*.pages.dev` subdomain, delete your project and create a new one."
 
 ### 关键文件：`public/_redirects`
 
