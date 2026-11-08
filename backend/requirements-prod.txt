@@ -1,9 +1,23 @@
-# 生产额外依赖：MySQL 驱动 + WSGI 服务器
+# 生产额外依赖：数据库驱动 + WSGI 服务器 + 静态文件服务
 # 安装：pip install -r requirements-prod.txt
-#   mysqlclient 需要系统里有 MySQL 客户端头文件：
-#     Debian/Ubuntu: apt install python3-dev default-libmysqlclient-dev build-essential
-#     macOS:         brew install mysql pkg-config
-#   装不上时可用纯 Python 的 PyMySQL 替代（见 README「生产部署」）
+#
+# 数据库驱动按实际选的库装一个即可（两个都装也不冲突）：
+#   MySQL      -> mysqlclient（需要系统里有 MySQL 头文件）
+#                 Debian/Ubuntu: apt install python3-dev default-libmysqlclient-dev build-essential
+#                 macOS:         brew install mysql pkg-config
+#                 装不上时可用纯 Python 的 pymysql 替代（见 README「生产部署」）
+#   PostgreSQL -> psycopg[binary]（预编译包，不需要系统依赖）
+#
 -r requirements.txt
+
+# MySQL 驱动
 mysqlclient>=2.2
+
+# PostgreSQL 驱动
+psycopg[binary]>=3.2
+
+# WSGI 服务器
 gunicorn>=22.0
+
+# 静态文件（admin 的 CSS/JS）：没有 Nginx 时由 Django 进程直接发
+whitenoise>=6.7

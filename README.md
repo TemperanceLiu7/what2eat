@@ -293,30 +293,26 @@ what2eat/
 
 因为外壳是 `defineAsyncComponent` 懒加载的，手机用户根本不会下载桌面那套 CSS/JS，反之亦然。
 
-## 换成真后端（Django + DRF）
+## 前后端对接方式
 
-`src/data/db.js` 里每个导出函数都刻意写成了「异步 + `{ ok, message }`」的形状，替换时只改函数体：
+页面不直接碰 HTTP，全部经过 `src/api/`（mock 与真接口二选一，见上文「登录与前后端联调」）。
 
-```js
-// 例：把本地收藏换成接口
-export async function toggleFavorite(id) {
-  const { data } = await axios.post('/api/favorites/toggle/', { dish_id: id })
-  state.favorites[id] = data.favorited
-  return data
-}
+- **前端部署**：Cloudflare Pages，push 自动构建（见下一节）
+- **后端部署**：由组内同学负责，**不绑定平台**。代码已支持 SQLite / MySQL / PostgreSQL 三种库、
+  gunicorn 启动、WhiteNoise 发静态文件，环境变量与启动命令写在
+  [backend/README.md](backend/README.md) 第八节。
+
+切到真后端只需要前端两个环境变量：
+
+```bash
+VITE_API_BASE=https://<后端域名>/api
+VITE_USE_MOCK=false
 ```
-
-页面里的 `await`、错误提示、`ok` 判断全都不用动。建议顺序：
-
-1. `DISHES` / `SHOPS` 换成 `GET /api/dishes/`；
-2. `pickRandom` 换成 `GET /api/dishes/random/?source=canteen`（权重抽样放后端，别在前端算，否则数据量大了一个都抽不准）；
-3. `verifyStudent` 换成 `POST /api/auth/bind-student/`，核验逻辑必须在服务端；
-4. 打卡图片的 base64 换成 `POST /api/upload/` 拿 URL。
 
 ## 两个必须知道的限制
 
-1. **HTTP 下手机的部分能力不可用**。`capture` 拍照、摇一摇的 `DeviceMotionEvent`、PWA 安装都要求 HTTPS（安全上下文）。局域网 `http://` 地址只能演示界面和按钮流程。正式演示建议用 Cloudflare Tunnel 或 Caddy 自动证书挂个域名，二维码一次搞定。
-2. **数据存在浏览器 localStorage**，换设备/清缓存就没了。图片压到 900px 是为了不撑爆 5MB 配额，存十几条打卡没问题。
+1. **HTTP 下手机的部分能力不可用**。`capture` 拍照、摇一摇的 `DeviceMotionEvent`、PWA 安装都要求 HTTPS（安全上下文）。局域网 `http://` 地址只能演示界面和按钮流程。Cloudflare Pages 和绝大多数云平台默认给 HTTPS，所以线上不受影响。
+2. **演示模式（mock）的数据存在浏览器 localStorage**，换设备/清缓存就没了；切到真后端后数据在服务器数据库里。图片压到 900px 是为了不撑爆 localStorage 的 5MB 配额。
 
 ## 部署到 Cloudflare Pages（改本地 → push → 网址自动更新）
 
@@ -391,7 +387,7 @@ Pages 靠这个文件做 SPA 回退，否则直接访问 `/vote`、`/me` 会 404
 
 ### 一个必须知道的边界
 
-Cloudflare / Vercel 只托管**静态文件，跑不了 Python**。等你接 Django 后端时，前端继续放这里，后端要另外部署（Railway、Render、PythonAnywhere 都有免费额度），再把接口地址配成环境变量。现在这版没有后端，完全够用。
+Cloudflare / Vercel 只托管**静态文件，跑不了 Python**。所以前端放它们那儿，后端要单独部署一台能跑 Python 进程的服务（云服务器、容器平台、PaaS 都行），再把地址配成前端的 `VITE_API_BASE`。具体要填哪些环境变量、怎么启动，见 [backend/README.md](backend/README.md) 第八节。
 
 ## 自己改代码
 

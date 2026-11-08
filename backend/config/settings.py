@@ -197,13 +197,13 @@ if DB_ENGINE in {"mysql", "mysql8", "mariadb"}:
         }
     }
 elif DB_ENGINE in {"postgres", "postgresql", "pgsql"}:
-    # 云端（Render / Neon / Supabase）通常直接给一个 DATABASE_URL，优先用它
+    # 托管数据库通常直接给一个 DATABASE_URL，优先用它
     from urllib.parse import unquote, urlparse
 
     def _pg_options(host: str, default_sslmode: str) -> dict:
         """psycopg 连接参数。
 
-        Neon 开了 Connection pooling 时主机名带 ``-pooler``（PgBouncer 事务模式），
+        开了连接池时主机名可能带 ``-pooler``（PgBouncer 事务模式），
         这种连接不保证会话级状态，psycopg 的「会话内预编译语句」会失效，
         必须把 ``prepare_threshold`` 置空。带不带 pooler 都能跑。
         """
@@ -225,7 +225,7 @@ elif DB_ENGINE in {"postgres", "postgresql", "pgsql"}:
                 "HOST": _host,
                 "PORT": str(parsed.port or 5432),
                 "CONN_MAX_AGE": env_int("DB_CONN_MAX_AGE", 60),
-                # Neon 等托管库要求 SSL；Render 内网库可设 DB_SSLMODE=prefer
+                # 托管库通常要求 SSL；同机/内网库可设 DB_SSLMODE=prefer
                 "OPTIONS": _pg_options(_host, "require"),
             }
         }

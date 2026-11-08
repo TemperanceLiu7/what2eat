@@ -33,11 +33,6 @@ if DATABASES["default"]["ENGINE"] not in {  # noqa: F405
         "设置 DB_ENGINE=mysql 及 DB_* 变量，或 DB_ENGINE=postgres + DATABASE_URL"
     )
 
-# Render 这类平台会自动注入自己的外部域名，直接放行，省得手填 ALLOWED_HOSTS
-_render_host = env("RENDER_EXTERNAL_HOSTNAME")
-if _render_host and _render_host not in ALLOWED_HOSTS:  # noqa: F405
-    ALLOWED_HOSTS = [*ALLOWED_HOSTS, _render_host]  # noqa: F405
-
 # 跨域只认白名单（不做通配）
 CORS_ALLOW_ALL_ORIGINS = env_bool("CORS_ALLOW_ALL_ORIGINS", default=False)
 CORS_ALLOWED_ORIGINS = env_list("CORS_ALLOWED_ORIGINS", ())
@@ -59,7 +54,7 @@ SECURE_REFERRER_POLICY = "same-origin"
 X_FRAME_OPTIONS = "DENY"
 
 # 静态文件交给 Nginx / WhiteNoise，媒体文件建议换对象存储
-# Render 免费实例没有 Nginx，用 WhiteNoise 直接从进程里发 static
+# 没有 Nginx 时，用 WhiteNoise 直接从进程里发 static
 try:
     import whitenoise  # noqa: F401
 

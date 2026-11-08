@@ -237,32 +237,69 @@ python smoke_test.py --base http://127.0.0.1:8000/api           # 真实 HTTP �
 
 ---
 
-## 八、生产部署（MySQL 8）
+## 八、生产部署（任意云平台）
 
-```sql
-CREATE DATABASE what2eat CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-```
+后端不绑定任何特定平台：**只要有 Python 3.10+ 和一台能跑进程的服务器/容器/平台**就能部署。
+数据库支持三种，用环境变量 `DB_ENGINE` 切换，代码不用改：
+
+| `DB_ENGINE` | 数据库 | 需要的驱动 | 适用 |
+|---|---|---|---|
+| `sqlite` | 本地文件 | 无 | 本地开发 / 一次性演示 |
+| `mysql` | MySQL 8 | `mysqlclient` 或 `pymysql` | 学校机房、云数据库 |
+| `postgres` | PostgreSQL | `psycopg[binary]` | 云平台常送的免费库 |
+
+`DB_ENGINE=postgres` 时可以直接给一个连接串，省得拆成五个变量：
 
 ```bash
-pip install -r requirements-prod.txt
-
-export DJANGO_ENV=prod
-export SECRET_KEY='<python -c "import secrets;print(secrets.token_urlsafe(64))">'
-export ALLOWED_HOSTS=api.example.com
-export CORS_ALLOWED_ORIGINS=https://what2eat.example.com
-export DB_ENGINE=mysql DB_NAME=what2eat DB_USER=what2eat DB_PASSWORD=*** DB_HOST=127.0.0.1 DB_PORT=3306
-
-python manage.py migrate
-python manage.py collectstatic --noinput
-gunicorn config.wsgi:application -b 127.0.0.1:8000 -w 3
+export DB_ENGINE=postgres
+export DATABASE_URL='postgresql://user:pass@host:5432/dbname?sslmode=require'
 ```
 
-Nginx 侧重定向 `/static/` 与 `/media/`（生产不再由 Django 托管媒体文件）。
-`settings_prod.py` 会在缺少 `SECRET_KEY` / `ALLOWED_HOSTS` / CORS 白名单或未用 MySQL 时**直接报错退出**，
-避免带着开发配置上线。
+> 连接串里带 `-pooler`（连接池）时，代码会自动关掉 psycopg 的预编译语句，
+> 所以 Pooled / Direct 两种连接都能跑。
 
-> `mysqlclient` 编译失败时，可换纯 Python 驱动：`pip install PyMySQL`，并在
-> `config/__init__.py` 加 `import pymysql; pymysql.install_as_MySQLdb()`。
+### 必填环境变量
+
+| 变量 | 说明 |
+|---|---|
+| `DJANGO_ENV` | 必须 `prod` |
+| `SECRET_KEY` | 随机 64 位；生成：`python -c "import secrets;print(secrets.token_urlsafe(64))"` |
+| `ALLOWED_HOSTS` | 后端域名，逗号分隔；也可写 `.example.com` 放行子域 |
+| `CORS_ALLOWED_ORIGINS` | 前端地址，例如 `https://what2eatt.pages.dev` |
+| `DB_ENGINE` + `DATABASE_URL`（或 `DB_*`） | 数据库连接 |
+
+选填：`LLM_API_KEY` / `LLM_BASE_URL` / `LLM_MODEL`（图片识别）、
+`VOTE_DEFAULT_HOURS`、`AUTO_MUTE_REPORT_COUNT`、`IMAGE_MAX_BYTES` 等，见 `.env.example`。
+
+缺 `SECRET_KEY` / `ALLOWED_HOSTS` / CORS 白名单，或用了一个不支持的数据库引擎，
+`settings_prod.py` 会**直接报错退出**，避免带着开发配置上线。
+
+### 启动命令
+
+```bash
+pip install -r requirements-prod.txt          # 含 gunicorn + whitenoise + 两种数据库驱动
+
+python manage.py migrate --no-input            # 建表
+python manage.py collectstatic --no-input      # 后台静态文件，WhiteNoise 会直接发，不需要 Nginx
+python manage.py seed --admin                  # 演示数据：6 档口 / 16 菜品 / 后台账号
+python manage.py import_students data/students.csv --reset   # 学籍白名单（36 人）
+
+gunicorn config.wsgi:application -b 0.0.0.0:$PORT -w 2 --threads 4 --timeout 60
+```
+
+`$PORT` 换成平台给的端口；没有的话写死 `8000` 也行。
+
+### 上线后自检
+
+```bash
+curl https://你的域名/api/dishes/        # 应该返回菜品列表
+curl https://你的域名/api/docs           # Swagger 文档
+```
+
+- 后台：`https://你的域名/admin/`，账号 `admin`，密码就是 `seed --admin` 时设的
+  （环境变量 `DEMO_ADMIN_PASSWORD`，默认 `admin123456`，**上线必须改**）
+- 上传的图片存在进程本地目录 `media/`，**容器/平台重启会丢**；要长期保存得接对象存储
+  （改 `core/images.py` + `STORAGES` 即可）
 
 ---
 
