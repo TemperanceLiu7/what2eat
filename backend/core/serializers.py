@@ -213,14 +213,20 @@ class CheckinSerializer(serializers.ModelSerializer):
     at = serializers.SerializerMethodField()
     createdAt = serializers.SerializerMethodField()
     liked = serializers.SerializerMethodField()
+    isMine = serializers.SerializerMethodField()
 
     class Meta:
         model = Checkin
         fields = (
             "id", "user", "userId", "who", "studentId", "content", "image",
             "dish", "dishId", "dishName", "at", "created_at", "createdAt", "liked",
+            "visibility", "isMine",
         )
         read_only_fields = fields
+
+    def get_isMine(self, obj: Checkin) -> bool:
+        user = self.context.get("request").user if self.context.get("request") else None
+        return bool(user and user.is_authenticated and obj.user_id == user.id)
 
     def get_userId(self, obj: Checkin):
         return obj.user_id
@@ -238,7 +244,9 @@ class CheckinSerializer(serializers.ModelSerializer):
         return obj.dish_id
 
     def get_dishName(self, obj: Checkin) -> str:
-        return obj.dish.name if obj.dish_id else ""
+        if obj.dish_id:
+            return obj.dish.name
+        return obj.dish_name or ""
 
     def get_at(self, obj: Checkin) -> int:
         return int(obj.created_at.timestamp() * 1000)
@@ -263,6 +271,12 @@ class CheckinCreateSerializer(serializers.Serializer):
     dish_name = serializers.CharField(
         required=False, allow_blank=True, default="", max_length=64
     )
+    visibility = serializers.ChoiceField(
+        choices=Checkin.Visibility.values,
+        required=False,
+        default=Checkin.Visibility.PUBLIC,
+        error_messages={"invalid_choice": "visibility 只能是 public / private"},
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -278,6 +292,9 @@ class VoteSerializer(serializers.ModelSerializer):
     deadlineAt = serializers.SerializerMethodField()
     createdAt = serializers.SerializerMethodField()
     my_option = serializers.SerializerMethodField()
+    isReview = serializers.SerializerMethodField()
+    reviewOf = serializers.SerializerMethodField()
+    reviewedBy = serializers.SerializerMethodField()
 
     class Meta:
         model = Vote
@@ -285,6 +302,7 @@ class VoteSerializer(serializers.ModelSerializer):
             "id", "title", "target", "status", "statusText", "deadline", "deadlineAt",
             "target_count", "targetCount", "agree_count", "disagree_count",
             "agree", "disagree", "need", "creator", "created_at", "createdAt", "my_option",
+            "isReview", "reviewOf", "reviewedBy",
         )
         read_only_fields = fields
 
@@ -321,6 +339,19 @@ class VoteSerializer(serializers.ModelSerializer):
             .values_list("option", flat=True)
             .first()
         )
+
+    def get_isReview(self, obj: Vote) -> bool:
+        return obj.is_review
+
+    def get_reviewOf(self, obj: Vote):
+        return obj.review_of_id
+
+    def get_reviewedBy(self, obj: Vote):
+        """这条投票已经被复审过了吗？给前端决定要不要显示「申请复审」。"""
+        reviewed = self.context.get("reviewed_ids")
+        if reviewed is None:
+            return None
+        return obj.id in reviewed
 
 
 class VoteCreateSerializer(serializers.Serializer):

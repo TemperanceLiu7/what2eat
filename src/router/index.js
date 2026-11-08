@@ -1,11 +1,16 @@
-import { createRouter, createWebHistory } from 'vue-router'
+﻿import { createRouter, createWebHistory } from 'vue-router'
 
 const routes = [
-  { path: '/', name: 'home', component: () => import('@/pages/Home.vue'), meta: { title: '随机推荐' } },
+  { path: '/', redirect: '/personal' },
+  { path: '/draw', name: 'home', component: () => import('@/pages/Home.vue'), meta: { title: '随机推荐' } },
   { path: '/checkin', name: 'checkin', component: () => import('@/pages/Checkin.vue'), meta: { title: '备餐打卡' } },
   { path: '/vote', name: 'vote', component: () => import('@/pages/Vote.vue'), meta: { title: '吃不吃投票' } },
+  { path: '/personal', name: 'personal', component: () => import('@/pages/Personal.vue'), meta: { title: '个人' } },
+  { path: '/community', name: 'community', component: () => import('@/pages/Community.vue'), meta: { title: '社区' } },
+  { path: '/eat', name: 'eat', component: () => import('@/pages/Eat.vue'), meta: { title: '今天吃了啥' } },
   { path: '/me', name: 'me', component: () => import('@/pages/Me.vue'), meta: { title: '我的' } },
-  { path: '/:pathMatch(.*)*', redirect: '/' },
+  { path: '/login', name: 'login', component: () => import('@/pages/Login.vue'), meta: { title: '登录' } },
+  { path: '/:pathMatch(.*)*', redirect: '/personal' },
 ]
 
 const router = createRouter({

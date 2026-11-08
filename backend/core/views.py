@@ -1,4 +1,4 @@
-"""业务视图。
+﻿"""业务视图。
 
 统一约定：
 - 成功走 ``ok(data, message)``，失败 ``raise ApiError(code, message)``；
@@ -39,6 +39,7 @@ from .permissions import ensure_authenticated, ensure_can_publish, ensure_verifi
 from .responses import (
     ALREADY_VOTED,
     BANNED,
+    FORBIDDEN,
     INVALID_DATA,
     NOT_FOUND,
     UNAUTHORIZED,
@@ -46,6 +47,7 @@ from .responses import (
     ApiError,
     ok,
 )
+from .vision import VisionError, provider_ready, recognize  # noqa: E402
 from .serializers import (
     BindStudentSerializer,
     CheckinCreateSerializer,
@@ -476,10 +478,15 @@ class CheckinListCreateView(EnvelopeListView):
         )
 
         mine = (request.query_params.get("mine") or "").lower()
-        if mine in {"1", "true", "yes"}:
+        scope = (request.query_params.get("scope") or "").lower()
+        if mine in {"1", "true", "yes"} or scope == "mine":
+            # 个人板块：看自己的全部记录，含 private
             if not request.user.is_authenticated:
                 raise ApiError(UNAUTHORIZED, "请先登录", 401)
             queryset = queryset.filter(user=request.user)
+        else:
+            # 社区板块：只看公开的；私密打卡不进广场，也不可被举报
+            queryset = queryset.filter(visibility=Checkin.Visibility.PUBLIC)
 
         dish_id = request.query_params.get("dish") or request.query_params.get("dish_id")
         if dish_id:
@@ -526,7 +533,13 @@ class CheckinListCreateView(EnvelopeListView):
 
         image_file = save_base64_image(request.data.get("image"), name_hint="checkin")
 
-        checkin = Checkin(user=user, content=content, dish=dish)
+        checkin = Checkin(
+            user=user,
+            content=content,
+            dish=dish,
+            dish_name=(data.get("dish_name") or "").strip()[:64],
+            visibility=data.get("visibility") or Checkin.Visibility.PUBLIC,
+        )
         if image_file is not None:
             checkin.image = image_file
         checkin.save()
@@ -866,7 +879,20 @@ class VoteListCreateView(EnvelopeListView):
                 ).values_list("vote_id", "option")
             )
         serializer = VoteSerializer(
-            page, many=True, context={"request": request, "my_options": my_options}
+            page,
+            many=True,
+            context={
+                "request": request,
+                "my_options": my_options,
+                # 这一页里哪些投票已经被复审过了，前端据此隐藏「申请复审」
+                "reviewed_ids": set(
+                    Vote.objects.filter(review_of__in=[v.id for v in page]).values_list(
+                        "review_of_id", flat=True
+                    )
+                )
+                if page
+                else set(),
+            },
         )
         return paginator.get_paginated_response(serializer.data)
 
@@ -983,4 +1009,174 @@ class CastVoteView(APIView):
                 "my_option": option,
             },
             "投票成功",
+        )
+
+
+class ReviewVoteView(APIView):
+    """申请复审：对已出结果的投票，扩大目标人数重新投一次。
+
+    规则（对应文档 3.7 的「申请复审」）：
+    - 只有参与过该投票的人、或发起人本人可以申请
+    - 原投票必须已经出结果（通过 / 未通过 / 已截止）
+    - 一次投票只能复审一次；复审投票本身不能再被复审
+    - 复审的目标人数放大到 1.5 倍（至少 +2，封顶 VOTE_TARGET_COUNT_MAX）
+    - 最终以复审结果为准（列表按时间倒序，复审天然排在前面）
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        tags=["投票"],
+        summary="申请复审（扩大参与人数重新投票）",
+        description=(
+            "参与者或发起人可对已结算的投票申请复审；"
+            "新投票的 target_count 为原来的 1.5 倍（至少 +2）。"
+        ),
+        responses={201: ENVELOPE, 400: FAIL_ENVELOPE, 403: FAIL_ENVELOPE, 404: FAIL_ENVELOPE},
+    )
+    def post(self, request, pk: int):
+        user = ensure_can_publish(request.user)
+
+        with transaction.atomic():
+            original = Vote.objects.select_for_update().filter(pk=pk).first()
+            if original is None:
+                raise ApiError(NOT_FOUND, "投票不存在", 404)
+
+            if original.is_review:
+                raise ApiError(INVALID_DATA, "复审投票不能再申请复审")
+
+            if original.status == Vote.Status.ONGOING:
+                raise ApiError(INVALID_DATA, "投票还在进行中，等出结果后再申请复审")
+
+            if Vote.objects.filter(review_of=original).exists():
+                raise ApiError(INVALID_DATA, "这个投票已经复审过了")
+
+            participated = VoteRecord.objects.filter(vote=original, user=user).exists()
+            if not participated and original.creator_id != user.id:
+                raise ApiError(FORBIDDEN, "只有参与过这次投票的人才能申请复审")
+
+            max_count = int(getattr(settings, "VOTE_TARGET_COUNT_MAX", 99))
+            expanded = original.target_count + max(2, original.target_count // 2)
+            new_count = min(max_count, expanded)
+
+            deadline = timezone.now() + timedelta(
+                hours=int(getattr(settings, "VOTE_DEFAULT_HOURS", 12))
+            )
+            review = Vote.objects.create(
+                creator=user,
+                title=f"复审：{original.title}"[:100],
+                target=original.target,
+                target_count=new_count,
+                deadline=deadline,
+                status=Vote.Status.ONGOING,
+                review_of=original,
+            )
+
+        return ok(
+            {
+                "vote": VoteSerializer(review, context={"request": request}).data,
+                "need": review.need,
+                "originalId": original.id,
+                "targetCount": new_count,
+            },
+            f"已发起复审，参与人数扩大到 {new_count} 人",
+            status_code=201,
+        )
+
+# ---------------------------------------------------------------------------
+# 个人板块：今天吃了啥（图片识别） + 个人偏好画像
+# ---------------------------------------------------------------------------
+class RecognizeView(APIView):
+    """POST /api/recognize/ —— 把打卡图片交给视觉模型，返回菜品候选。
+
+    没配 ``LLM_API_KEY`` 时返回 ``ready: false``，前端降级成手动选菜，
+    不报错、不阻断打卡流程。
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        tags=["个人"],
+        summary="识别图片里的菜品",
+        description="入参 image 为 data URI 或纯 base64；返回最多 3 个候选菜名。",
+        responses={200: ENVELOPE, 400: FAIL_ENVELOPE, 401: FAIL_ENVELOPE},
+    )
+    def post(self, request):
+        image = (request.data.get("image") or "").strip()
+        if not image:
+            raise ApiError(INVALID_DATA, "没有收到图片")
+        if len(image) > 7_000_000:
+            raise ApiError(INVALID_DATA, "图片太大了，压缩后再试")
+
+        if not provider_ready():
+            return ok(
+                {"dishes": [], "note": "未配置视觉模型，请手动选择菜品", "ready": False},
+                "识别服务未启用",
+            )
+
+        try:
+            result = recognize(image)
+        except VisionError as exc:
+            return ok(
+                {"dishes": [], "note": str(exc)[:120], "ready": True},
+                "识别失败，可以手动填写",
+            )
+
+        return ok({**result, "ready": True}, "识别完成")
+
+
+class PreferencesView(APIView):
+    """GET /api/preferences/ —— 从我的打卡里算个人偏好画像。
+
+    私密打卡**也算**：不进社区，但一样用来形成个人口味偏好。
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        tags=["个人"],
+        summary="个人饮食偏好（来自全部打卡，含私密）",
+        responses={200: ENVELOPE, 401: FAIL_ENVELOPE},
+    )
+    def get(self, request):
+        from collections import Counter
+        from datetime import timedelta
+
+        from django.utils import timezone
+
+        qs = (
+            Checkin.objects.filter(user=request.user)
+            .select_related("dish", "dish__shop")
+            .order_by("-created_at")
+        )
+        items = list(qs[:100])
+
+        names = Counter()
+        categories = Counter()
+        sources = Counter()
+        for c in items:
+            name = c.dish.name if c.dish_id else (c.dish_name or "").strip()
+            if name:
+                names[name] += 1
+            if c.dish_id and c.dish.category:
+                categories[c.dish.category] += 1
+            if c.dish_id and c.dish.shop_id:
+                sources[c.dish.shop.get_type_display()] += 1
+
+        week_ago = timezone.now() - timedelta(days=7)
+        last7 = [c for c in items if c.created_at >= week_ago]
+
+        return ok(
+            {
+                "totalCheckins": len(items),
+                "last7Days": len(last7),
+                "privateCount": sum(
+                    1 for c in items if c.visibility == Checkin.Visibility.PRIVATE
+                ),
+                "topDishes": [{"name": n, "count": c} for n, c in names.most_common(5)],
+                "topCategories": [
+                    {"name": n, "count": c} for n, c in categories.most_common(5)
+                ],
+                "topSources": [{"name": n, "count": c} for n, c in sources.most_common(5)],
+            }
         )

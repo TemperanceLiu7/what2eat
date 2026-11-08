@@ -180,6 +180,18 @@ class Dish(models.Model):
 # 4. checkins
 # ---------------------------------------------------------------------------
 class Checkin(models.Model):
+    """打卡。
+
+    ``visibility`` 决定这条记录进哪个板块：
+    - ``public``：发布到社区打卡广场，别人能看、能点赞、能举报
+    - ``private``：只进「今天吃了啥」个人记录，不进社区，但**一样参与**个人偏好统计
+      和随机推荐的去重窗口——所以不加入社区的同学也能攒出自己的口味画像。
+    """
+
+    class Visibility(models.TextChoices):
+        PUBLIC = "public", "社区可见"
+        PRIVATE = "private", "仅自己可见"
+
     user = models.ForeignKey(
         User, verbose_name="用户", on_delete=models.CASCADE, related_name="checkins"
     )
@@ -193,6 +205,15 @@ class Checkin(models.Model):
         null=True,
         blank=True,
     )
+    # 识别出来的菜名（没关联到 dishes 表时也能记下来，用于偏好统计）
+    dish_name = models.CharField("识别/填写的菜名", max_length=64, blank=True, default="")
+    visibility = models.CharField(
+        "可见范围",
+        max_length=16,
+        choices=Visibility.choices,
+        default=Visibility.PUBLIC,
+        db_index=True,
+    )
     created_at = models.DateTimeField("发布时间", auto_now_add=True, db_index=True)
 
     class Meta:
@@ -203,10 +224,15 @@ class Checkin(models.Model):
         indexes = [
             models.Index(fields=["user", "-created_at"], name="idx_checkin_user_time"),
             models.Index(fields=["dish"], name="idx_checkin_dish"),
+            models.Index(fields=["visibility", "-created_at"], name="idx_checkin_visibility"),
         ]
 
     def __str__(self) -> str:
         return f"{self.user_id}@{self.created_at:%Y-%m-%d %H:%M}: {self.content[:20]}"
+
+    @property
+    def is_public(self) -> bool:
+        return self.visibility == self.Visibility.PUBLIC
 
 
 # ---------------------------------------------------------------------------
@@ -329,6 +355,15 @@ class Vote(models.Model):
     target_count = models.PositiveSmallIntegerField("目标人数", default=6)
     agree_count = models.PositiveIntegerField("同意票数", default=0)
     disagree_count = models.PositiveIntegerField("反对票数", default=0)
+    # 复审：指向被复审的原投票；为 NULL 表示这是普通投票
+    review_of = models.ForeignKey(
+        "self",
+        verbose_name="复审的原投票",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="reviews",
+    )
     created_at = models.DateTimeField("创建时间", auto_now_add=True, db_index=True)
 
     class Meta:
@@ -350,6 +385,16 @@ class Vote(models.Model):
     @property
     def is_open(self) -> bool:
         return self.status == self.Status.ONGOING and self.deadline > timezone.now()
+
+    @property
+    def is_review(self) -> bool:
+        """是否是一次复审投票。"""
+        return self.review_of_id is not None
+
+    @property
+    def is_settled(self) -> bool:
+        """是否已经出结果（通过 / 未通过 / 已截止）。"""
+        return self.status != self.Status.ONGOING
 
     def settle(self, save: bool = False) -> str:
         """按过半规则结算状态；``save=True`` 时落库，返回结算后的状态。"""

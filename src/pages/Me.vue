@@ -1,43 +1,63 @@
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { toggleFavorite, usingMock } from '@/api'
 import {
-  state,
-  DEMO_STUDENT,
-  verifyStudent,
-  favoriteDishes,
-  toggleFavorite,
-  allDishViews,
-  fmtTime,
-} from '@/data/db'
+  bindStudent,
+  isLoggedIn,
+  isMuted,
+  isVerified,
+  loadCheckins,
+  loadFavorites,
+  loadVotes,
+  logout,
+  mutedUntilText,
+  ui,
+} from '@/stores/app'
+import { DEMO_STUDENT } from '@/data/db'
 import { toast } from '@/composables/useToast'
 import UField from '@/ui/UField.vue'
 import UButton from '@/ui/UButton.vue'
+
+const router = useRouter()
 
 const sid = ref('')
 const name = ref('')
 const college = ref('')
 
 const stats = computed(() => [
-  { label: '打卡', value: state.checkins.length, emoji: '📸' },
-  { label: '收藏', value: Object.keys(state.favorites).length, emoji: '⭐' },
-  { label: '点赞', value: Object.keys(state.likes).length, emoji: '❤️' },
-  { label: '投票', value: state.votes.length, emoji: '🗳️' },
+  { label: '打卡', value: ui.checkins.length, emoji: '📸' },
+  { label: '收藏', value: Object.keys(ui.favorites).length, emoji: '⭐' },
+  { label: '点赞', value: Object.keys(ui.likes).length, emoji: '❤️' },
+  { label: '投票', value: ui.votes.length, emoji: '🗳️' },
 ])
 
-const favs = computed(() => favoriteDishes())
+const favs = computed(() => ui.favoriteList || [])
 
-const recent = computed(() =>
-  state.eaten
-    .slice(0, 5)
-    .map((e) => allDishViews().find((d) => d.id === e.dishId))
-    .filter(Boolean),
-)
+const recent = computed(() => ui.eaten.slice(0, 5))
 
-const passing = computed(() => state.votes.filter((v) => v.status === 'passed').length)
+const passing = computed(() => ui.votes.filter((v) => v.status === 'passed').length)
 
-function doVerify() {
-  const res = verifyStudent({ studentId: sid.value, name: name.value, college: college.value })
+async function refreshAll() {
+  if (!isLoggedIn.value) return
+  await Promise.allSettled([loadCheckins(), loadVotes(), loadFavorites()])
+}
+
+onMounted(refreshAll)
+
+async function doVerify() {
+  if (!isLoggedIn.value) {
+    toast('请先登录，再核验学号')
+    router.push({ path: '/login', query: { redirect: '/me' } })
+    return
+  }
+  const res = await bindStudent({
+    studentId: sid.value.trim(),
+    name: name.value.trim(),
+    college: college.value.trim(),
+  })
   toast(res.message)
+  if (res.ok) await refreshAll()
 }
 
 function fillDemo() {
@@ -46,13 +66,26 @@ function fillDemo() {
   college.value = DEMO_STUDENT.college
 }
 
-function unfav(id) {
-  toggleFavorite(id)
-  toast('已取消收藏')
+async function unfav(id) {
+  try {
+    await toggleFavorite('dish', id)
+    toast('已取消收藏')
+    await loadFavorites()
+  } catch (err) {
+    toast(err?.message || '操作失败')
+  }
+}
+
+async function doLogout() {
+  await logout()
+  toast('已退出登录')
+  router.replace('/login')
 }
 
 function resetAll() {
   localStorage.removeItem('what2eat:v1')
+  localStorage.removeItem('what2eat:user')
+  localStorage.removeItem('what2eat:eaten')
   toast('演示数据已清空，正在刷新')
   setTimeout(() => location.reload(), 500)
 }
@@ -63,7 +96,18 @@ function resetAll() {
     <h1 class="me-title">我的</h1>
 
     <!-- 身份验证 -->
-    <section v-if="!state.user.verified" class="card verify">
+    <section v-if="!isLoggedIn" class="card verify">
+      <div class="section-head">
+        <h2>还没有登录</h2>
+        <span class="sub">登录后才能核验</span>
+      </div>
+      <p class="muted">随机推荐不需要登录，但发打卡、发起投票、收藏都需要一个校园账号，且必须完成学号核验。</p>
+      <UButton type="primary" block @click="router.push({ path: '/login', query: { redirect: '/me' } })">
+        去登录 / 注册
+      </UButton>
+    </section>
+
+    <section v-else-if="!isVerified" class="card verify">
       <div class="section-head">
         <h2>学生身份核验</h2>
         <span class="sub">发布内容的前置条件</span>
@@ -89,9 +133,16 @@ function resetAll() {
     <section v-else class="card verified-card">
       <div class="v-row">
         <span class="v-badge">✅ 已认证学生</span>
-        <span class="v-id">{{ state.user.studentId }}</span>
+        <span class="v-id">{{ ui.user?.studentId }}</span>
       </div>
-      <p class="v-name">{{ state.user.name }} · {{ state.user.college }}</p>
+      <p class="v-name">{{ ui.user?.name }} · {{ ui.user?.college }}</p>
+      <p v-if="isMuted" class="muted-warn">
+        ⚠️ 账号已被{{ ui.user?.banned ? '封禁' : '禁言' }}<span v-if="mutedUntilText">，解禁时间 {{ mutedUntilText }}</span>
+        ，期间无法发布内容。
+      </p>
+      <p v-else-if="ui.user?.reportCount" class="muted-warn soft">
+        累计被举报 {{ ui.user.reportCount }} 次，请注意发布内容。
+      </p>
       <p class="muted">一个学号只能绑定一个账号，发布打卡与投票时后端会再次校验绑定状态。</p>
     </section>
 
@@ -104,8 +155,8 @@ function resetAll() {
       </div>
     </section>
 
-    <p v-if="state.votes.length" class="muted pass-tip">
-      已发起 {{ state.votes.length }} 个投票，其中 {{ passing }} 个达到「过半同意」。
+    <p v-if="ui.votes.length" class="muted pass-tip">
+      已发起 {{ ui.votes.length }} 个投票，其中 {{ passing }} 个达到「过半同意」。
     </p>
 
     <!-- 收藏 -->
@@ -148,9 +199,14 @@ function resetAll() {
     </section>
 
     <section class="block">
-      <button class="reset" @click="resetAll">清空演示数据</button>
+      <button v-if="isLoggedIn" class="reset" @click="doLogout">退出登录</button>
+      <button v-if="usingMock" class="reset" @click="resetAll">清空演示数据</button>
       <p class="muted reset-tip">
-        数据只存在这台设备的浏览器里（localStorage），换个设备就是全新的。正式版会把这一层换成 Django 接口。
+        {{
+          usingMock
+            ? '当前是演示模式：数据只存在这台设备的浏览器里，换个设备就是全新的。'
+            : '当前已连接后端：数据保存在服务器数据库，换设备登录同一账号即可看到。'
+        }}
       </p>
     </section>
   </div>
@@ -217,6 +273,21 @@ function resetAll() {
 .v-name {
   font-size: 14px;
   margin-bottom: 8px;
+}
+
+.muted-warn {
+  font-size: 13px;
+  line-height: 1.6;
+  color: #a8433f;
+  background: #fdf3f2;
+  border-radius: 8px;
+  padding: 8px 10px;
+  margin-bottom: 10px;
+}
+
+.muted-warn.soft {
+  color: #8a6a2f;
+  background: #fdf7ec;
 }
 
 .stats {

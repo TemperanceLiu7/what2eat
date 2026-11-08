@@ -1,4 +1,4 @@
-"""接口自检：``python manage.py test``。
+﻿"""接口自检：``python manage.py test``。
 
 覆盖四条核心接口的完整链路（这三条用户明确要求「完整可用」）：
 - ``/api/auth/bind-student/`` 三重核验 + 学号唯一
@@ -430,3 +430,85 @@ class ReportAndPaginationTests(BaseApiTest):
         )
         self.assertEqual(response.status_code, 204)
         self.assertEqual(response["Access-Control-Allow-Origin"], "http://localhost:5173")
+
+class VoteReviewTests(BaseApiTest):
+    """申请复审：只有参与者/发起人能对已结算的投票发起，且只能复审一次。"""
+
+    def _settled_vote(self, creator, voter, target_count=3):
+        """建一个 target_count 人的投票，两人同意 → 直接 passed。"""
+        vote = creator.post(
+            VOTES, {"title": "晚饭吃鸡公煲", "target_count": target_count}, format="json"
+        ).json()["data"]["vote"]
+        creator.post(f"{VOTES}{vote['id']}/cast/", {"option": "agree"}, format="json")
+        voter.post(f"{VOTES}{vote['id']}/cast/", {"option": "agree"}, format="json")
+        return vote
+
+    def test_review_requires_settled_vote(self):
+        client = self.verified_client("rev_a")
+        vote = client.post(VOTES, {"title": "还在投", "target_count": 6}, format="json").json()[
+            "data"
+        ]["vote"]
+
+        response = client.post(f"{VOTES}{vote['id']}/review/", {}, format="json")
+        self.assertEqual(response.status_code, 400, response.content)
+        self.assertEqual(response.json()["code"], "INVALID_DATA")
+
+    def test_participant_can_request_review_and_target_expands(self):
+        creator = self.verified_client("rev_b")
+        voter = self.verified_client("rev_voter", "20230002", "李同学", "外国语学院")
+        vote = self._settled_vote(creator, voter)
+
+        listing = creator.get(VOTES).json()["data"]["items"]
+        settled = next(v for v in listing if v["id"] == vote["id"])
+        self.assertEqual(settled["status"], "passed")
+        self.assertFalse(settled["reviewedBy"])
+
+        response = voter.post(f"{VOTES}{vote['id']}/review/", {}, format="json")
+        self.assertEqual(response.status_code, 201, response.content)
+        data = response.json()["data"]
+        self.assertEqual(data["originalId"], vote["id"])
+        # 3 人 → 3 + max(2, 1) = 5 人，need = 3
+        self.assertEqual(data["targetCount"], 5)
+        self.assertEqual(data["need"], 3)
+        self.assertEqual(data["vote"]["status"], "ongoing")
+        self.assertTrue(data["vote"]["isReview"])
+        self.assertEqual(data["vote"]["reviewOf"], vote["id"])
+
+        # 列表里原投票应被标记为「已复审」
+        after = creator.get(VOTES).json()["data"]["items"]
+        self.assertTrue(next(v for v in after if v["id"] == vote["id"])["reviewedBy"])
+
+    def test_outsider_cannot_request_review(self):
+        creator = self.verified_client("rev_c")
+        voter = self.verified_client("rev_voter", "20230002", "李同学", "外国语学院")
+        vote = self._settled_vote(creator, voter)
+
+        outsider = self.verified_client("rev_d", "20230003", "王同学", "机械工程学院")
+        response = outsider.post(f"{VOTES}{vote['id']}/review/", {}, format="json")
+        self.assertEqual(response.status_code, 403, response.content)
+        self.assertEqual(response.json()["code"], "FORBIDDEN")
+
+    def test_review_only_once(self):
+        creator = self.verified_client("rev_e")
+        voter = self.verified_client("rev_voter", "20230002", "李同学", "外国语学院")
+        vote = self._settled_vote(creator, voter)
+
+        first = creator.post(f"{VOTES}{vote['id']}/review/", {}, format="json")
+        self.assertEqual(first.status_code, 201, first.content)
+
+        second = creator.post(f"{VOTES}{vote['id']}/review/", {}, format="json")
+        self.assertEqual(second.status_code, 400, second.content)
+        self.assertIn("复审过", second.json()["message"])
+
+    def test_review_vote_cannot_be_reviewed_again(self):
+        creator = self.verified_client("rev_f")
+        voter = self.verified_client("rev_voter", "20230002", "李同学", "外国语学院")
+        vote = self._settled_vote(creator, voter)
+        review_id = creator.post(f"{VOTES}{vote['id']}/review/", {}, format="json").json()["data"][
+            "vote"
+        ]["id"]
+
+        # 复审投票本身（哪怕还在进行中）也不能再被复审
+        response = creator.post(f"{VOTES}{review_id}/review/", {}, format="json")
+        self.assertEqual(response.status_code, 400, response.content)
+        self.assertIn("复审投票", response.json()["message"])

@@ -1,4 +1,4 @@
-import { reactive, watch } from 'vue'
+﻿import { reactive, watch } from 'vue'
 
 /**
  * 演示版数据层：全部在浏览器里跑，用 localStorage 持久化。
@@ -212,7 +212,7 @@ export function verifyStudent({ studentId, name, college }) {
 // 备餐打卡
 // ---------------------------------------------------------------------------
 
-export function addCheckin({ content, image, dishName }) {
+export function addCheckin({ content, image, dishName, visibility }) {
   if (!state.user.verified) return { ok: false, message: '发布前请先完成学号核验', code: 'UNVERIFIED' }
   if (!content || !content.trim()) return { ok: false, message: '写点什么吧' }
 
@@ -223,6 +223,7 @@ export function addCheckin({ content, image, dishName }) {
     content: content.trim(),
     image: image || '',
     dishName: dishName || '',
+    visibility: visibility === 'private' ? 'private' : 'public',
     at: Date.now(),
   })
   return { ok: true, message: '打卡成功' }

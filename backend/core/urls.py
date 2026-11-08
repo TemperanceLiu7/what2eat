@@ -1,4 +1,4 @@
-"""API 路由：与前端契约（``what2eat/src/api/README.md``）逐条对应。
+﻿"""API 路由：与前端契约（``what2eat/src/api/README.md``）逐条对应。
 
     POST   /api/auth/register/           注册
     POST   /api/auth/token/              登录，返回 access/refresh
@@ -42,4 +42,8 @@ urlpatterns = [
     # 投票
     path("votes/", views.VoteListCreateView.as_view(), name="vote-list"),
     path("votes/<int:pk>/cast/", views.CastVoteView.as_view(), name="vote-cast"),
+    path("votes/<int:pk>/review/", views.ReviewVoteView.as_view(), name="vote-review"),
+    # 个人板块
+    path("recognize/", views.RecognizeView.as_view(), name="recognize"),
+    path("preferences/", views.PreferencesView.as_view(), name="preferences"),
 ]

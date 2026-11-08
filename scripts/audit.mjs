@@ -120,12 +120,19 @@ async function main() {
   })`)
   await shot('m-result')
 
-  // ---------- 3. 学号核验 ----------
-  await goto('/me')
-  await evaluate(`document.querySelector('.demo-fill').click(); true`)
+  // ---------- 3. 登录 + 学号核验（现在需要先登录才能核验） ----------
+  await goto('/login')
+  await evaluate(`document.querySelector('.demo-fill, .link') && [...document.querySelectorAll('button')].find(b => b.textContent.includes('填入演示账号'))?.click(); true`)
   await sleep(300)
-  await evaluate(`[...document.querySelectorAll('button')].find(b => b.textContent.trim() === '提交核验').click(); true`)
-  await sleep(600)
+  await evaluate(`[...document.querySelectorAll('.panel .van-button')].find(b => b.textContent.trim() === '登录')?.click(); true`)
+  await sleep(2200)
+  report.login = await evaluate(`({
+    loggedIn: !!JSON.parse(localStorage.getItem('what2eat:user') || 'null'),
+    verified: JSON.parse(localStorage.getItem('what2eat:user') || '{}').verified || false
+  })`)
+
+  await goto('/me')
+  await sleep(2500)
   report.verify = await evaluate(`({
     badge: document.querySelector('.v-badge')?.textContent.trim() || null,
     idShown: document.querySelector('.v-id')?.textContent.trim() || null

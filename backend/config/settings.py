@@ -200,33 +200,47 @@ elif DB_ENGINE in {"postgres", "postgresql", "pgsql"}:
     # 云端（Render / Neon / Supabase）通常直接给一个 DATABASE_URL，优先用它
     from urllib.parse import unquote, urlparse
 
+    def _pg_options(host: str, default_sslmode: str) -> dict:
+        """psycopg 连接参数。
+
+        Neon 开了 Connection pooling 时主机名带 ``-pooler``（PgBouncer 事务模式），
+        这种连接不保证会话级状态，psycopg 的「会话内预编译语句」会失效，
+        必须把 ``prepare_threshold`` 置空。带不带 pooler 都能跑。
+        """
+        options: dict = {"sslmode": env("DB_SSLMODE", default_sslmode)}
+        if "-pooler" in (host or ""):
+            options["prepare_threshold"] = None
+        return options
+
     db_url = env("DATABASE_URL")
     if db_url:
         parsed = urlparse(db_url)
+        _host = parsed.hostname or ""
         DATABASES = {
             "default": {
                 "ENGINE": "django.db.backends.postgresql",
                 "NAME": unquote((parsed.path or "").lstrip("/")),
                 "USER": unquote(parsed.username or ""),
                 "PASSWORD": unquote(parsed.password or ""),
-                "HOST": parsed.hostname or "",
+                "HOST": _host,
                 "PORT": str(parsed.port or 5432),
                 "CONN_MAX_AGE": env_int("DB_CONN_MAX_AGE", 60),
                 # Neon 等托管库要求 SSL；Render 内网库可设 DB_SSLMODE=prefer
-                "OPTIONS": {"sslmode": env("DB_SSLMODE", "require")},
+                "OPTIONS": _pg_options(_host, "require"),
             }
         }
     else:
+        _host = env("DB_HOST", "127.0.0.1") or "127.0.0.1"
         DATABASES = {
             "default": {
                 "ENGINE": "django.db.backends.postgresql",
                 "NAME": env("DB_NAME", "what2eat"),
                 "USER": env("DB_USER", "postgres"),
                 "PASSWORD": env("DB_PASSWORD", ""),
-                "HOST": env("DB_HOST", "127.0.0.1"),
+                "HOST": _host,
                 "PORT": env("DB_PORT", "5432"),
                 "CONN_MAX_AGE": env_int("DB_CONN_MAX_AGE", 60),
-                "OPTIONS": {"sslmode": env("DB_SSLMODE", "prefer")},
+                "OPTIONS": _pg_options(_host, "prefer"),
             }
         }
 elif DB_ENGINE in {"sqlite", "sqlite3", ""}:
@@ -349,6 +363,16 @@ VOTE_TARGET_COUNT_MAX = env_int("VOTE_TARGET_COUNT_MAX", 99)
 # 举报：累计多少次自动禁言，禁言时长（小时）
 AUTO_MUTE_REPORT_COUNT = env_int("AUTO_MUTE_REPORT_COUNT", 5)
 AUTO_MUTE_HOURS = env_int("AUTO_MUTE_HOURS", 24)
+
+# ---------------------------------------------------------------------------
+# 图片识别（「今天吃了啥」自动识别菜品）
+# 走 OpenAI 兼容的 chat/completions 接口；不配 LLM_API_KEY 就自动降级成手动选菜
+# ---------------------------------------------------------------------------
+LLM_API_KEY = env("LLM_API_KEY", "") or ""
+LLM_BASE_URL = env("LLM_BASE_URL", "https://api.deepseek.com/v1") or ""
+LLM_MODEL = env("LLM_MODEL", "deepseek-chat") or ""
+LLM_TEMPERATURE = float(env("LLM_TEMPERATURE", "0.3"))
+LLM_TIMEOUT = env_int("LLM_TIMEOUT", 30)
 # 后台「禁言」批量操作默认天数
 MUTE_DEFAULT_DAYS = env_int("MUTE_DEFAULT_DAYS", 3)
 

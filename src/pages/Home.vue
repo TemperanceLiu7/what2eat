@@ -1,18 +1,9 @@
 <script setup>
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import {
-  SOURCES,
-  allDishViews,
-  heatOf,
-  pickRandom,
-  recordEaten,
-  isLiked,
-  isFaved,
-  toggleLike,
-  toggleFavorite,
-  state,
-} from '@/data/db'
+import { SOURCES, allDishViews, heatOf, isLiked, isFaved } from '@/data/db'
+import { pickRandom, toggleFavorite, toggleLike } from '@/api'
+import { pushEaten, ui } from '@/stores/app'
 import { toast } from '@/composables/useToast'
 import { useIsMobile } from '@/composables/useIsMobile'
 import UButton from '@/ui/UButton.vue'
@@ -26,8 +17,9 @@ const rolling = ref(false)
 // 抽签序号：让「同一道菜再次中签」也能重播入场动画（key 里带上它）
 const drawSeq = ref(0)
 
-const liked = computed(() => !!dish.value && isLiked(dish.value.id))
-const faved = computed(() => !!dish.value && isFaved(dish.value.id))
+const liked = ref(false)
+const faved = ref(false)
+
 const heat = computed(() => (dish.value ? heatOf(dish.value) : 0))
 
 const hot = computed(() =>
@@ -37,14 +29,20 @@ const hot = computed(() =>
     .slice(0, 5),
 )
 
-const recent = computed(() =>
-  state.eaten
-    .slice(0, 3)
-    .map((e) => allDishViews().find((d) => d.id === e.dishId))
-    .filter(Boolean),
-)
+const recent = computed(() => ui.eaten.slice(0, 3))
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
+
+/** 真接口会带 liked / favorited，mock 从本地记录里取 */
+function syncFlags(d) {
+  if (!d) {
+    liked.value = false
+    faved.value = false
+    return
+  }
+  liked.value = d.liked ?? isLiked(d.id)
+  faved.value = d.favorited ?? isFaved(d.id)
+}
 
 async function roll() {
   if (rolling.value) return
@@ -53,24 +51,47 @@ async function roll() {
 
   rolling.value = true
   await sleep(520) // 与 CSS 里的 --draw-dur 对齐
-  const picked = pickRandom(source.value)
-  dish.value = picked
-  drawSeq.value += 1
-  rolling.value = false
-  if (picked) recordEaten(picked.id)
+  try {
+    const picked = await pickRandom(source.value)
+    dish.value = picked
+    drawSeq.value += 1
+    syncFlags(picked)
+    if (picked) pushEaten(picked)
+  } catch (err) {
+    toast(err?.message || '抽签失败，稍后再试')
+  } finally {
+    rolling.value = false
+  }
   if (navigator.vibrate) navigator.vibrate(8) // 结果落定时补一次轻震
 }
 
-function like() {
-  if (!dish.value) return
-  const on = toggleLike(dish.value.id)
-  toast(on ? '已点赞，会略微提高它的中签率' : '已取消点赞')
+function needLogin(err) {
+  if (err?.status === 401) {
+    toast('请先登录')
+    router.push({ path: '/login', query: { redirect: '/' } })
+    return true
+  }
+  return false
 }
 
-function fav() {
+async function like() {
   if (!dish.value) return
-  const on = toggleFavorite(dish.value.id)
-  toast(on ? '已收藏，去「我的」查看' : '已取消收藏')
+  try {
+    liked.value = await toggleLike('dish', dish.value.id)
+    toast(liked.value ? '已点赞，会略微提高它的中签率' : '已取消点赞')
+  } catch (err) {
+    if (!needLogin(err)) toast(err?.message || '操作失败')
+  }
+}
+
+async function fav() {
+  if (!dish.value) return
+  try {
+    faved.value = await toggleFavorite('dish', dish.value.id)
+    toast(faved.value ? '已收藏，去「我的」查看' : '已取消收藏')
+  } catch (err) {
+    if (!needLogin(err)) toast(err?.message || '操作失败')
+  }
 }
 
 // ---- 手机甩动抽签（HTTPS 下才可用，按钮始终兜底） ----

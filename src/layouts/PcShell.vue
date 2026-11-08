@@ -1,7 +1,7 @@
 <script setup>
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
-import { state } from '@/data/db'
+import { isLoggedIn, isVerified, ui } from '@/stores/app'
 
 const route = useRoute()
 const active = computed(() => route.path)
@@ -18,17 +18,17 @@ const active = computed(() => route.path)
         </router-link>
 
         <el-menu :default-active="active" mode="horizontal" router :ellipsis="false" class="pc-menu">
-          <el-menu-item index="/">随机推荐</el-menu-item>
-          <el-menu-item index="/checkin">备餐打卡</el-menu-item>
-          <el-menu-item index="/vote">吃不吃投票</el-menu-item>
+          <el-menu-item index="/personal">个人</el-menu-item>
+          <el-menu-item index="/community">社区</el-menu-item>
           <el-menu-item index="/me">我的</el-menu-item>
         </el-menu>
 
-        <router-link to="/me" class="pc-user">
-          <el-tag v-if="state.user.verified" type="success" effect="light" round>
-            已认证 · {{ state.user.studentId }}
+        <router-link :to="isLoggedIn ? '/me' : '/login'" class="pc-user">
+          <el-tag v-if="isVerified" type="success" effect="light" round>
+            已认证 · {{ ui.user.studentId }}
           </el-tag>
-          <el-tag v-else type="warning" effect="light" round>未认证 · 去绑定</el-tag>
+          <el-tag v-else-if="isLoggedIn" type="warning" effect="light" round>未核验 · 去核验</el-tag>
+          <el-tag v-else effect="plain" round>登录 / 注册</el-tag>
         </router-link>
       </div>
     </header>

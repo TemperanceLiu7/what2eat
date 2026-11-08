@@ -1,4 +1,4 @@
-import { ApiError, get, post, setToken } from './client'
+import { ApiError, clearToken, get, post, setToken } from './client'
 import { messageOf } from './errors'
 import * as mock from './mock'
 
@@ -105,8 +105,10 @@ const http = {
     return Array.isArray(list) ? list : []
   },
 
-  addCheckin({ content, image, dishName } = {}) {
-    return asResult(() => post('/checkins/', { content, image, dish_name: dishName }))
+  addCheckin({ content, image, dishName, visibility } = {}) {
+    return asResult(() =>
+      post('/checkins/', { content, image, dish_name: dishName, visibility }),
+    )
   },
 
   createVote({ title, target, targetCount } = {}) {
@@ -118,6 +120,67 @@ const http = {
 
   castVote(voteId, option) {
     return asResult(() => post(`/votes/${encodeURIComponent(voteId)}/cast/`, { option }))
+  },
+
+  requestReview(voteId) {
+    return asResult(
+      () => post(`/votes/${encodeURIComponent(voteId)}/review/`),
+      (res) => ({
+        vote: res.data?.vote || null,
+        targetCount: res.data?.targetCount ?? null,
+      }),
+    )
+  },
+
+  async listCheckins(scope) {
+    const res = await get('/checkins/', scope === 'mine' ? { scope: 'mine' } : {})
+    const list = res.data?.items || res.data
+    return Array.isArray(list) ? list : []
+  },
+
+  async recognizeImage(image) {
+    const res = await post('/recognize/', { image }, { timeout: 60000 })
+    return {
+      dishes: res.data?.dishes || [],
+      note: res.data?.note || '',
+      ready: res.data?.ready !== false,
+    }
+  },
+
+  async loadPreferences() {
+    const res = await get('/preferences/')
+    return res.data || {}
+  },
+
+  async listVotes() {
+    const res = await get('/votes/')
+    const list = res.data?.items || res.data
+    return Array.isArray(list) ? list : []
+  },
+
+  // 「模拟同学投票」是演示版专有的，真接口下没有这个能力
+  async simulateVotes() {
+    return { ok: false, message: '真接口模式下没有「模拟同学投票」', count: 0 }
+  },
+
+  async logout() {
+    clearToken()
+    return { ok: true, message: '已退出登录' }
+  },
+
+  report({ reportedId, targetType, targetId, reason } = {}) {    return asResult(
+      () =>
+        post('/reports/', {
+          reported_id: reportedId,
+          target_type: targetType,
+          target_id: targetId,
+          reason,
+        }),
+      (res) => ({
+        reportCount: res.data?.reportCount ?? 0,
+        autoMuted: Boolean(res.data?.autoMuted),
+      }),
+    )
   },
 }
 
@@ -137,6 +200,14 @@ export const favoriteDishes = () => impl.favoriteDishes()
 export const addCheckin = (params) => impl.addCheckin(params)
 export const createVote = (params) => impl.createVote(params)
 export const castVote = (voteId, option) => impl.castVote(voteId, option)
+export const requestReview = (voteId) => impl.requestReview(voteId)
+export const listCheckins = (scope) => impl.listCheckins(scope)
+export const recognizeImage = (image) => impl.recognizeImage(image)
+export const loadPreferences = () => impl.loadPreferences()
+export const listVotes = () => impl.listVotes()
+export const simulateVotes = (voteId, count) => impl.simulateVotes(voteId, count)
+export const logout = () => impl.logout()
+export const report = (params) => impl.report(params)
 
 // 页面想主动处理错误（比如 401 跳登录）时用得上
 export { ApiError, messageOf }

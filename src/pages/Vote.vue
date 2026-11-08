@@ -1,7 +1,9 @@
-<script setup>
-import { computed, ref } from 'vue'
+﻿<script setup>
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { state, createVote, castVote, simulateVotes, votesNeeded, voteStatusText, fmtTime } from '@/data/db'
+import { castVote, createVote, requestReview, simulateVotes, usingMock } from '@/api'
+import { isLoggedIn, isMuted, isVerified, loadVotes, mutedUntilText, ui } from '@/stores/app'
+import { fmtTime, votesNeeded, voteStatusText } from '@/data/db'
 import { toast } from '@/composables/useToast'
 import UField from '@/ui/UField.vue'
 import UButton from '@/ui/UButton.vue'
@@ -14,15 +16,28 @@ const target = ref('')
 const targetCount = ref(6)
 const openForm = ref(false)
 
-const verified = computed(() => state.user.verified)
-const pct = (v) => Math.min(100, Math.round(((v.agree || 0) / v.targetCount) * 100))
+const verified = computed(() => isVerified.value)
+const pct = (v) => Math.min(100, Math.round(((v.agree || 0) / (v.targetCount || 1)) * 100))
 const remain = (v) => Math.max(0, votesNeeded(v.targetCount) - v.agree)
 
-function submit() {
-  const res = createVote({ title: title.value, target: target.value, targetCount: targetCount.value })
+onMounted(async () => {
+  try {
+    await loadVotes()
+  } catch (err) {
+    toast(err?.message || '投票列表加载失败')
+  }
+})
+
+async function submit() {
+  if (!isLoggedIn.value) {
+    toast('请先登录')
+    router.push({ path: '/login', query: { redirect: '/vote' } })
+    return
+  }
+  const res = await createVote({ title: title.value, target: target.value, targetCount: targetCount.value })
   if (!res.ok) {
     toast(res.message)
-    if (res.code === 'UNVERIFIED') router.push('/me')
+    if (res.code === 'UNVERIFIED') router.push('/login')
     return
   }
   toast('投票已发起，拉同学来投')
@@ -30,21 +45,53 @@ function submit() {
   target.value = ''
   targetCount.value = 6
   openForm.value = false
+  await loadVotes()
 }
 
-function vote(v, option) {
+async function vote(v, option) {
+  if (!isLoggedIn.value) {
+    toast('请先登录')
+    router.push({ path: '/login', query: { redirect: '/vote' } })
+    return
+  }
   if (option === 'agree' && !verified.value) {
     toast('参与投票需要先完成学号核验')
     return
   }
-  const res = castVote(v.id, option)
+  const res = await castVote(v.id, option)
   if (!res.ok) toast(res.message)
   else toast(option === 'agree' ? '已投「去吃」' : '已投「不去」')
+  await loadVotes()
 }
 
-function simulate(v) {
-  const n = simulateVotes(v.id, 2)
-  toast(n ? `模拟 ${n} 位同学投了票` : '这个投票已经结束')
+async function simulate(v) {
+  const res = await simulateVotes(v.id, 2)
+  toast(res.message || (res.count ? `模拟 ${res.count} 位同学投了票` : '这个投票已经结束'))
+  await loadVotes()
+}
+
+// 复审状态
+const reviewing = ref(null)
+
+/** 能申请复审的条件：已出结果 + 没被复审过 + 自己参与过或就是发起人 */
+function canReview(v) {
+  if (v.status === 'ongoing') return false
+  if (v.isReview || v.reviewOf) return false
+  if (v.reviewedBy) return false
+  if (!isLoggedIn.value) return false
+  if (usingMock) return true
+  return Boolean(v.my_option) || v.creator?.id === ui.user?.id
+}
+
+async function review(v) {
+  reviewing.value = v.id
+  try {
+    const res = await requestReview(v.id)
+    toast(res.message)
+    if (res.ok) await loadVotes()
+  } finally {
+    reviewing.value = null
+  }
 }
 </script>
 
@@ -57,8 +104,16 @@ function simulate(v) {
       </p>
     </section>
 
+    <section v-if="isMuted" class="card muted-banner">
+      <strong>你当前处于禁言状态</strong>
+      <span v-if="mutedUntilText">，解禁时间：{{ mutedUntilText }}</span>
+      <p>禁言期间不能发起投票，也不能参与投票。</p>
+    </section>
+
     <section class="card create">
-      <button v-if="!openForm" class="create-toggle" @click="openForm = true">＋ 发起一个投票</button>
+      <button v-if="!openForm" class="create-toggle" :disabled="isMuted" @click="openForm = true">
+        ＋ 发起一个投票
+      </button>
 
       <template v-else>
         <div class="create-head">
@@ -85,17 +140,22 @@ function simulate(v) {
       </template>
     </section>
 
-    <div v-if="!state.votes.length" class="card empty">
+    <div v-if="!ui.votes.length" class="card empty">
       <span class="emoji">🗳️</span>
       还没有投票，发起第一个吧
     </div>
 
     <section class="list">
-      <article v-for="v in state.votes" :key="v.id" class="card vote-card">
+      <article v-for="v in ui.votes" :key="v.id" class="card vote-card">
         <header class="vote-head">
-          <h3>{{ v.title }}</h3>
+          <h3>
+            <span v-if="v.isReview || v.reviewOf" class="review-tag">复审</span>
+            {{ v.title }}
+          </h3>
           <span class="badge" :class="v.status">{{ voteStatusText(v) }}</span>
         </header>
+
+        <p v-if="v.reviewOf" class="review-from">由投票 #{{ v.reviewOf }} 复审而来，参与人数扩大到 {{ v.targetCount }} 人</p>
 
         <p v-if="v.target" class="vote-target">🎯 {{ v.target }}</p>
 
@@ -114,7 +174,16 @@ function simulate(v) {
           <div class="vote-actions">
             <UButton size="small" :disabled="v.status !== 'ongoing'" @click="vote(v, 'agree')">去吃</UButton>
             <UButton size="small" plain :disabled="v.status !== 'ongoing'" @click="vote(v, 'disagree')">不去</UButton>
-            <UButton size="small" text :disabled="v.status !== 'ongoing'" @click="simulate(v)">模拟同学</UButton>
+            <UButton size="small" text v-if="usingMock" :disabled="v.status !== 'ongoing'" @click="simulate(v)">模拟同学</UButton>
+            <UButton
+              v-if="canReview(v)"
+              size="small"
+              text
+              :loading="reviewing === v.id"
+              @click="review(v)"
+            >
+              申请复审
+            </UButton>
           </div>
         </div>
       </article>
@@ -277,6 +346,31 @@ function simulate(v) {
   color: #4a5160;
 }
 
+/* 禁言提示 */
+.muted-banner {
+  margin-bottom: 16px;
+  border: 1px solid #f6c9c7;
+  background: #fdf3f2;
+  color: #8a3b38;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.muted-banner strong {
+  font-size: 14px;
+}
+
+.muted-banner p {
+  margin-top: 6px;
+  font-size: 12px;
+  color: #a2605c;
+}
+
+.create-toggle:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 .vote-nums {
   display: flex;
   align-items: center;
@@ -326,5 +420,27 @@ function simulate(v) {
   .vote-actions {
     justify-content: flex-end;
   }
+}
+
+/* 复审 */
+.review-tag {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 1px 6px;
+  margin-right: 6px;
+  border-radius: 6px;
+  background: #eef4ff;
+  color: #2f6fd0;
+  vertical-align: 2px;
+}
+
+.review-from {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: #5b6b8c;
+  background: #f4f7ff;
+  border-radius: 8px;
+  padding: 6px 10px;
 }
 </style>
