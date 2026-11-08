@@ -14,7 +14,7 @@ const DEFAULT_TIMEOUT = 10 * 1000
 const env = import.meta.env || {}
 
 /** 真后端地址；没配就走同源 /api（vite 代理或 nginx 转发到 Django） */
-export const BASE_URL = String(env.VITE_API_BASE || '/api').replace(/\/+$/, '')
+const BASE_URL = String(env.VITE_API_BASE || '/api').replace(/\/+$/, '')
 
 /** 统一错误类型：status / code / message 三件套，够页面做提示和分支了 */
 export class ApiError extends Error {
@@ -39,7 +39,7 @@ const isApiError = (err) => err instanceof ApiError || err?.name === 'ApiError'
 // token：存在 localStorage，刷新页面不掉登录态
 // ---------------------------------------------------------------------------
 
-export function getToken() {
+function getToken() {
   try {
     return localStorage.getItem(TOKEN_KEY) || ''
   } catch {
@@ -96,7 +96,7 @@ function normalize(payload, status) {
  * @param {string} path 相对 BASE_URL 的路径，如 '/votes/1/cast/'
  * @param {{ method?: string, body?: any, params?: object, headers?: object, timeout?: number, auth?: boolean }} [options]
  */
-export async function request(path, options = {}) {
+async function request(path, options = {}) {
   const { method = 'GET', body, params, headers, timeout = DEFAULT_TIMEOUT, auth = true } = options
 
   const controller = new AbortController()

@@ -16,7 +16,7 @@ export const SOURCES = [
   { key: 'night', label: '夜市', emoji: '🌙' },
 ]
 
-export const SHOPS = [
+const SHOPS = [
   { id: 's1', name: '一食堂·三层小炒', source: 'canteen', location: '东区一食堂 3F', emoji: '🍳' },
   { id: 's2', name: '二食堂·麻辣香锅', source: 'canteen', location: '西区二食堂 2F', emoji: '🌶️' },
   { id: 's3', name: '三食堂·兰州拉面', source: 'canteen', location: '南区三食堂 1F', emoji: '🍜' },
@@ -25,7 +25,7 @@ export const SHOPS = [
   { id: 's6', name: '夜市·烤冷面', source: 'night', location: '北门夜市 18:00-23:00', emoji: '🌙' },
 ]
 
-export const DISHES = [
+const DISHES = [
   { id: 'd1', shopId: 's1', name: '鱼香肉丝盖饭', price: 12, category: '盖饭', emoji: '🍛', desc: '微辣，下饭神器', likes: 36, favorites: 12 },
   { id: 'd2', shopId: 's1', name: '番茄炒蛋盖饭', price: 10, category: '盖饭', emoji: '🍅', desc: '酸甜口，永远不会错', likes: 28, favorites: 9 },
   { id: 'd3', shopId: 's1', name: '糖醋里脊', price: 16, category: '热菜', emoji: '🍖', desc: '外酥里嫩，配米饭', likes: 41, favorites: 15 },
@@ -44,11 +44,11 @@ export const DISHES = [
   { id: 'd16', shopId: 's1', name: '手工水饺（12 只）', price: 14, category: '面食', emoji: '🥟', desc: '白菜猪肉，现包', likes: 25, favorites: 6 },
 ]
 
-export const shopById = (id) => SHOPS.find((s) => s.id === id)
-export const dishById = (id) => DISHES.find((d) => d.id === id)
+const shopById = (id) => SHOPS.find((s) => s.id === id)
+const dishById = (id) => DISHES.find((d) => d.id === id)
 
 /** 菜品 + 所属档口 + 来源，页面直接用这个视图对象 */
-export function dishView(dish) {
+function dishView(dish) {
   const shop = shopById(dish.shopId)
   return { ...dish, shop, source: shop?.source || 'canteen', sourceLabel: SOURCES.find((s) => s.key === shop?.source)?.label || '食堂' }
 }
@@ -132,10 +132,6 @@ export function pickRandom(source = 'all') {
   return candidates[candidates.length - 1]
 }
 
-export function recordEaten(dishId) {
-  state.eaten.unshift({ dishId, at: Date.now() })
-  if (state.eaten.length > 30) state.eaten.length = 30
-}
 
 // ---------------------------------------------------------------------------
 // 点赞 / 收藏

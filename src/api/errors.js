@@ -26,7 +26,7 @@ export const ERROR_MESSAGES = {
 }
 
 /** HTTP 状态码 → 默认提示（后端没给 message 时兜底） */
-export const STATUS_MESSAGES = {
+const STATUS_MESSAGES = {
   400: '请求参数有误',
   401: '登录状态已失效，请重新登录',
   403: '没有权限执行这个操作',
@@ -38,7 +38,7 @@ export const STATUS_MESSAGES = {
 }
 
 /** HTTP 状态码 → 业务码，方便统一按 code 处理 */
-export const STATUS_CODES = {
+const STATUS_CODES = {
   400: 'INVALID_DATA',
   401: 'UNAUTHORIZED',
   403: 'FORBIDDEN',

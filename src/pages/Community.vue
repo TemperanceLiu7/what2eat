@@ -1,7 +1,7 @@
 <script setup>
 import { onMounted, ref } from 'vue'
 import { fmtTime } from '@/data/db'
-import { loadCheckins, ui } from '@/stores/app'
+import { loadCheckins } from '@/stores/app'
 import { toast } from '@/composables/useToast'
 
 const latest = ref([])

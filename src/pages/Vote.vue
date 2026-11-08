@@ -346,25 +346,7 @@ async function review(v) {
   color: #4a5160;
 }
 
-/* 禁言提示 */
-.muted-banner {
-  margin-bottom: 16px;
-  border: 1px solid #f6c9c7;
-  background: #fdf3f2;
-  color: #8a3b38;
-  font-size: 13px;
-  line-height: 1.7;
-}
 
-.muted-banner strong {
-  font-size: 14px;
-}
-
-.muted-banner p {
-  margin-top: 6px;
-  font-size: 12px;
-  color: #a2605c;
-}
 
 .create-toggle:disabled {
   opacity: 0.55;

@@ -2,7 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { fmtTime } from '@/data/db'
-import { isLoggedIn, isVerified, loadCheckins, loadPreferences, ui } from '@/stores/app'
+import { isLoggedIn, loadCheckins, loadPreferences, ui } from '@/stores/app'
 import { toast } from '@/composables/useToast'
 
 const router = useRouter()

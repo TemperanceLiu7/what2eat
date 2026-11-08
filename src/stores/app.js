@@ -51,7 +51,7 @@ export const isLoggedIn = computed(() =>
 
 export const isVerified = computed(() => Boolean(ui.user?.verified))
 
-export const displayName = computed(
+const displayName = computed(
   () => ui.user?.name || ui.user?.username || (usingMock ? '同学' : '未登录'),
 )
 
@@ -81,7 +81,7 @@ function persistUser(user) {
 }
 
 /** 把后端 / mock 返回的用户对象归一化成页面认识的样子 */
-export function normalizeUser(raw) {
+function normalizeUser(raw) {
   if (!raw) return null
   const studentId = raw.studentId || raw.student_id || ''
   const status = raw.status || 'normal'
@@ -217,6 +217,6 @@ export function pushEaten(dish) {
   }
 }
 
-export function eatenDishIds() {
+function eatenDishIds() {
   return ui.eaten.map((e) => e.dishId)
 }

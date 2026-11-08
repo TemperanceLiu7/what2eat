@@ -122,17 +122,6 @@ class ShopBriefSerializer(serializers.ModelSerializer):
         return SHOP_EMOJI.get(obj.type, "🍽️")
 
 
-class ShopSerializer(ShopBriefSerializer):
-    dishCount = serializers.SerializerMethodField()
-
-    class Meta(ShopBriefSerializer.Meta):
-        fields = ShopBriefSerializer.Meta.fields + ("dishCount",)
-        read_only_fields = fields
-
-    def get_dishCount(self, obj: Shop) -> int:
-        return getattr(obj, "dish_count", obj.dishes.count())
-
-
 class DishBriefSerializer(serializers.ModelSerializer):
     image = serializers.SerializerMethodField()
     emoji = serializers.SerializerMethodField()
@@ -398,29 +387,6 @@ class ToggleTargetSerializer(serializers.Serializer):
     )
 
 
-class FavoriteSerializer(serializers.ModelSerializer):
-    dish = serializers.SerializerMethodField()
-    favoritedAt = serializers.SerializerMethodField()
-
-    class Meta:
-        model = Favorite
-        fields = ("id", "target_type", "target_id", "dish", "created_at", "favoritedAt")
-        read_only_fields = fields
-
-    def get_dish(self, obj: Favorite):
-        return self.context.get("dish_map", {}).get(obj.target_id)
-
-    def get_favoritedAt(self, obj: Favorite) -> int:
-        return int(obj.created_at.timestamp() * 1000)
-
-
-class LikeSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Like
-        fields = ("id", "target_type", "target_id", "created_at")
-        read_only_fields = fields
-
-
 class ReportSerializer(serializers.ModelSerializer):
     reporter = UserBriefSerializer(read_only=True)
     reported = UserBriefSerializer(read_only=True)
@@ -499,6 +465,5 @@ class BindStudentSerializer(serializers.Serializer):
     college = serializers.CharField(
         max_length=64, error_messages={"blank": "请填写学院"}
     )
-
 
 
