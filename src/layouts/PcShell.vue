@@ -54,18 +54,18 @@ const active = computed(() => route.path)
   position: sticky;
   top: 0;
   z-index: 100;
-  background: rgba(255, 255, 255, 0.82);
-  backdrop-filter: saturate(180%) blur(12px);
-  border-bottom: 1px solid var(--line);
+  background: rgba(170, 181, 154, 0.86);
+  backdrop-filter: saturate(160%) blur(12px);
+  border-bottom: 1px dashed rgba(244, 237, 217, 0.6);
 }
 
 .pc-header-inner {
   width: min(var(--page-w), 100% - 48px);
   margin: 0 auto;
-  height: 64px;
+  height: 68px;
   display: flex;
   align-items: center;
-  gap: 24px;
+  gap: 20px;
 }
 
 .brand {
@@ -76,22 +76,26 @@ const active = computed(() => route.path)
 }
 
 .brand-emoji {
-  font-size: 22px;
+  font-size: 24px;
 }
 
 .brand-name {
-  font-size: 17px;
+  font-family: var(--font-hand);
+  font-size: 20px;
   font-weight: 700;
   letter-spacing: 0.02em;
+  color: var(--kraft-deep);
 }
 
 .brand-tag {
-  font-size: 11px;
-  padding: 2px 7px;
-  border-radius: 999px;
-  background: #fff1ea;
+  font-family: var(--font-hand);
+  font-size: 12px;
+  padding: 3px 10px;
+  border-radius: 6px;
+  background: var(--cream);
   color: var(--brand);
-  font-weight: 600;
+  transform: rotate(-2deg);
+  box-shadow: var(--shadow-sm);
 }
 
 .pc-menu {
@@ -101,13 +105,22 @@ const active = computed(() => route.path)
 }
 
 .pc-menu :deep(.el-menu-item) {
+  font-family: var(--font-hand);
   font-size: 15px;
-  border-bottom: 2px solid transparent !important;
+  color: var(--ink-soft);
+  border-radius: 10px;
+  margin: 0 4px;
+  border-bottom: none !important;
+}
+
+.pc-menu :deep(.el-menu-item:hover) {
+  background: rgba(244, 237, 217, 0.55) !important;
 }
 
 .pc-menu :deep(.el-menu-item.is-active) {
-  border-bottom-color: var(--brand) !important;
-  font-weight: 600;
+  background: var(--kraft) !important;
+  color: var(--cream) !important;
+  font-weight: 700;
 }
 
 .pc-user {
@@ -122,6 +135,6 @@ const active = computed(() => route.path)
   padding: 18px 0 28px;
   text-align: center;
   font-size: 12px;
-  color: var(--muted);
+  color: rgba(255, 250, 238, 0.85);
 }
 </style>

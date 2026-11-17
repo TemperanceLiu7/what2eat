@@ -89,11 +89,13 @@ const entries = [
 }
 
 .kicker {
-  font-size: 12px;
-  letter-spacing: 0.12em;
+  display: inline-flex;
+  font-family: var(--font-hand);
+  font-size: 13px;
+  letter-spacing: 0.08em;
   color: var(--brand);
-  font-weight: 600;
-  margin-bottom: 6px;
+  font-weight: 700;
+  margin-bottom: 8px;
 }
 
 h1 {
@@ -114,20 +116,45 @@ h1 {
 }
 
 .entry {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 16px;
+  padding: 18px 16px 16px;
   transition: transform 0.18s ease, box-shadow 0.18s ease;
 }
 
+.entry::before {
+  content: '';
+  position: absolute;
+  top: -7px;
+  left: 24px;
+  width: 52px;
+  height: 13px;
+  transform: rotate(3deg);
+  background: rgba(125, 145, 104, 0.45);
+  border-left: 1px dashed rgba(255, 255, 255, 0.5);
+  border-right: 1px dashed rgba(255, 255, 255, 0.5);
+  border-radius: 2px;
+}
+
+.entry:nth-child(odd) {
+  transform: rotate(0.9deg);
+}
+
+.entry:nth-child(even) {
+  transform: rotate(-1deg);
+}
+
 .entry:hover {
-  transform: translateY(-2px);
+  transform: rotate(0deg) translateY(-2px);
   box-shadow: var(--shadow);
 }
 
 .entry-emoji {
   font-size: 26px;
+  filter: drop-shadow(0 3px 3px rgba(84, 56, 42, 0.25));
+  transform: rotate(5deg);
 }
 
 .entry-body {
@@ -137,8 +164,9 @@ h1 {
 }
 
 .entry-title {
-  font-size: 15px;
-  font-weight: 600;
+  font-family: var(--font-hand);
+  font-size: 16px;
+  font-weight: 700;
 }
 
 .entry-desc {
@@ -152,10 +180,10 @@ h1 {
 }
 
 .entry.brand {
-  background: linear-gradient(135deg, #fff4ee, #fff);
+  background: linear-gradient(135deg, #f6e7d6, var(--surface));
 }
 .entry.warm {
-  background: linear-gradient(135deg, #fff8ec, #fff);
+  background: linear-gradient(135deg, #fbf1d8, var(--surface));
 }
 
 .more {
@@ -191,13 +219,14 @@ h1 {
 }
 
 .who {
-  font-weight: 600;
+  font-family: var(--font-hand);
+  font-weight: 700;
 }
 
 .text {
   margin-top: 6px;
   font-size: 13px;
-  color: #3d434d;
+  color: var(--ink-soft);
 }
 
 .tag {
@@ -206,7 +235,7 @@ h1 {
   font-size: 12px;
   padding: 3px 9px;
   border-radius: 999px;
-  background: #fff1ea;
+  background: var(--brand-soft);
   color: var(--brand);
 }
 

@@ -176,7 +176,7 @@ function resetAll() {
           <span class="fav-emoji">{{ d.emoji }}</span>
           <div class="fav-body">
             <p class="fav-name">{{ d.name }}</p>
-            <p class="muted">{{ d.shop.name }} · ¥{{ d.price }}</p>
+            <p class="muted">{{ d.shop?.name }} · ¥{{ d.price }}</p>
           </div>
           <button class="fav-remove" @click="unfav(d.id)">取消</button>
         </div>
@@ -193,7 +193,7 @@ function resetAll() {
         <li v-for="d in recent" :key="d.id">
           <span class="r-emoji">{{ d.emoji }}</span>
           <span class="r-name">{{ d.name }}</span>
-          <span class="muted">{{ d.shop.name }}</span>
+          <span class="muted">{{ d.shop?.name }}</span>
         </li>
       </ul>
     </section>
@@ -246,8 +246,8 @@ function resetAll() {
 
 .verified-card {
   margin-bottom: 18px;
-  background: linear-gradient(135deg, #f2fbf6, #ffffff);
-  border: 1px solid #d6f0e2;
+  background: linear-gradient(135deg, #e6efd9, var(--surface));
+  border: 1px solid #cfe0bd;
 }
 
 .v-row {
@@ -259,9 +259,10 @@ function resetAll() {
 }
 
 .v-badge {
+  font-family: var(--font-hand);
   font-size: 15px;
   font-weight: 700;
-  color: #1a9c56;
+  color: #5f8a4e;
 }
 
 .v-id {
@@ -279,15 +280,15 @@ function resetAll() {
   font-size: 13px;
   line-height: 1.6;
   color: #a8433f;
-  background: #fdf3f2;
+  background: #fbeee9;
   border-radius: 8px;
   padding: 8px 10px;
   margin-bottom: 10px;
 }
 
 .muted-warn.soft {
-  color: #8a6a2f;
-  background: #fdf7ec;
+  color: var(--brand-2-deep);
+  background: #fbf1d8;
 }
 
 .stats {
@@ -298,7 +299,8 @@ function resetAll() {
 }
 
 .stat {
-  background: #fff;
+  background: var(--surface);
+  border: 1px solid var(--line);
   border-radius: 14px;
   box-shadow: var(--shadow-sm);
   padding: 14px 10px;
@@ -313,6 +315,7 @@ function resetAll() {
 }
 
 .stat-value {
+  font-family: var(--font-hand);
   font-size: 20px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
@@ -354,14 +357,15 @@ function resetAll() {
 }
 
 .fav-name {
+  font-family: var(--font-hand);
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 700;
   margin-bottom: 2px;
 }
 
 .fav-remove {
   border: 1px solid var(--line);
-  background: #fff;
+  background: var(--cream);
   border-radius: 8px;
   padding: 5px 10px;
   font-size: 12px;
@@ -371,7 +375,7 @@ function resetAll() {
 
 .fav-remove:hover {
   color: var(--brand);
-  border-color: #ffc6ad;
+  border-color: var(--brand-line);
 }
 
 .recent-list {
@@ -405,14 +409,14 @@ function resetAll() {
   padding: 12px;
   border-radius: 12px;
   border: 1px solid var(--line);
-  background: #fff;
-  color: #6b7280;
+  background: var(--cream);
+  color: var(--muted);
   font-size: 13px;
 }
 
 .reset:hover {
-  color: #d64541;
-  border-color: #f6c9c7;
+  color: var(--brand-strong);
+  border-color: var(--brand-line);
 }
 
 .reset-tip {

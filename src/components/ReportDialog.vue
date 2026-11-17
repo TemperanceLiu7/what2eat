@@ -138,10 +138,11 @@ async function submit() {
 
 .dialog {
   width: min(460px, 100%);
-  background: #fff;
+  background: var(--surface);
+  border: 1px solid var(--line);
   border-radius: 18px;
   padding: 20px;
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.24);
+  box-shadow: 0 24px 60px rgba(84, 56, 42, 0.28);
 }
 
 .head {
@@ -170,8 +171,8 @@ async function submit() {
 
 .quote {
   font-size: 13px;
-  color: #4a5160;
-  background: #f7f8fa;
+  color: var(--ink-soft);
+  background: var(--surface-soft);
   border-left: 3px solid var(--brand-line);
   border-radius: 8px;
   padding: 8px 10px;
@@ -200,6 +201,7 @@ async function submit() {
   width: 100%;
   border: 1px solid var(--line);
   border-radius: 10px;
+  background: var(--cream);
   padding: 10px 12px;
   font: inherit;
   font-size: 13px;

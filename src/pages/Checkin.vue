@@ -208,8 +208,8 @@ async function submit() {
   width: 200px;
   height: 148px;
   border-radius: 14px;
-  border: 1px dashed #ffc6ad;
-  background: #fff8f4;
+  border: 1px dashed var(--brand-line);
+  background: var(--surface-warm);
   overflow: hidden;
   cursor: pointer;
   transition: border-color 0.18s ease;
@@ -230,7 +230,7 @@ async function submit() {
   flex-direction: column;
   align-items: center;
   gap: 6px;
-  color: #b0752f;
+  color: var(--brand-2-deep);
 }
 
 .picker-icon {
@@ -297,7 +297,8 @@ async function submit() {
 }
 
 .who {
-  font-weight: 600;
+  font-family: var(--font-hand);
+  font-weight: 700;
   font-size: 14px;
 }
 
@@ -310,7 +311,7 @@ async function submit() {
   margin-top: 8px;
   font-size: 14px;
   line-height: 1.6;
-  color: #3d434d;
+  color: var(--ink-soft);
 }
 
 .dish-tag {
@@ -319,7 +320,7 @@ async function submit() {
   font-size: 12px;
   padding: 4px 10px;
   border-radius: 999px;
-  background: #fff1ea;
+  background: var(--brand-soft);
   color: var(--brand);
 }
 
@@ -346,7 +347,7 @@ async function submit() {
 }
 
 .report-link:hover {
-  color: #d64541;
+  color: var(--brand-strong);
   text-decoration: underline;
 }
 

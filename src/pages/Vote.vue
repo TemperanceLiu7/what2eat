@@ -214,12 +214,13 @@ async function review(v) {
 .create-toggle {
   width: 100%;
   padding: 14px;
-  border: 1px dashed #ffc6ad;
+  border: 1px dashed var(--brand-line);
   border-radius: 12px;
-  background: #fff8f4;
+  background: var(--brand-soft);
   color: var(--brand);
-  font-size: 14px;
-  font-weight: 600;
+  font-family: var(--font-hand);
+  font-size: 15px;
+  font-weight: 700;
 }
 
 .create-toggle:hover {
@@ -261,7 +262,7 @@ async function review(v) {
 
 .count-label {
   font-size: 13px;
-  color: #4a5160;
+  color: var(--ink-soft);
 }
 
 .count-tip {
@@ -275,15 +276,15 @@ async function review(v) {
   border: 1px solid var(--line);
   border-radius: 10px;
   overflow: hidden;
-  background: #fff;
+  background: var(--cream);
 }
 
 .stepper button {
   width: 32px;
   height: 32px;
   border: none;
-  background: #f7f8fa;
-  color: #4a5160;
+  background: var(--surface-soft);
+  color: var(--ink-soft);
   font-size: 16px;
   line-height: 1;
 }
@@ -313,6 +314,7 @@ async function review(v) {
 }
 
 .vote-head h3 {
+  font-family: var(--font-hand);
   font-size: 16px;
   line-height: 1.4;
 }
@@ -322,28 +324,28 @@ async function review(v) {
   font-size: 11px;
   padding: 3px 9px;
   border-radius: 999px;
-  background: #f3f4f7;
-  color: #6b7280;
+  background: var(--surface-soft);
+  color: var(--muted);
   white-space: nowrap;
 }
 
 .badge.ongoing {
-  background: #fff1ea;
+  background: var(--brand-soft);
   color: var(--brand);
 }
 .badge.passed {
-  background: #e8f8ee;
-  color: #1a9c56;
+  background: #e6efd9;
+  color: #5f8a4e;
 }
 .badge.rejected {
-  background: #fdeceb;
-  color: #d64541;
+  background: #f7e3dc;
+  color: #b0563f;
 }
 
 .vote-target {
   margin: 8px 0 12px;
   font-size: 13px;
-  color: #4a5160;
+  color: var(--ink-soft);
 }
 
 
@@ -363,12 +365,12 @@ async function review(v) {
 }
 
 .vote-nums .agree {
-  color: #1a9c56;
+  color: #5f8a4e;
   font-weight: 600;
 }
 
 .vote-nums .disagree {
-  color: #d64541;
+  color: #b0563f;
   font-weight: 600;
 }
 
@@ -412,16 +414,16 @@ async function review(v) {
   padding: 1px 6px;
   margin-right: 6px;
   border-radius: 6px;
-  background: #eef4ff;
-  color: #2f6fd0;
+  background: var(--surface-soft);
+  color: var(--kraft-deep);
   vertical-align: 2px;
 }
 
 .review-from {
   margin: 8px 0 0;
   font-size: 12px;
-  color: #5b6b8c;
-  background: #f4f7ff;
+  color: var(--ink-soft);
+  background: var(--surface-soft);
   border-radius: 8px;
   padding: 6px 10px;
 }

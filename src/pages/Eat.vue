@@ -194,11 +194,13 @@ async function submit() {
 }
 
 .kicker {
-  font-size: 12px;
-  letter-spacing: 0.12em;
+  display: inline-flex;
+  font-family: var(--font-hand);
+  font-size: 13px;
+  letter-spacing: 0.08em;
   color: var(--brand);
-  font-weight: 600;
-  margin-bottom: 6px;
+  font-weight: 700;
+  margin-bottom: 8px;
 }
 
 h1 {
@@ -223,8 +225,8 @@ h1 {
   justify-content: center;
   height: 180px;
   border-radius: 14px;
-  border: 1px dashed #ffc6ad;
-  background: #fff8f4;
+  border: 1px dashed var(--brand-line);
+  background: var(--surface-warm);
   overflow: hidden;
   cursor: pointer;
 }
@@ -245,7 +247,7 @@ h1 {
   flex-direction: column;
   align-items: center;
   gap: 4px;
-  color: #b0752f;
+  color: var(--brand-2-deep);
 }
 
 .icon {
@@ -263,11 +265,11 @@ h1 {
 }
 
 .recognize {
-  background: #f7f8fa;
+  background: var(--surface-soft);
   border-radius: 12px;
   padding: 10px 12px;
   font-size: 13px;
-  color: #4a5160;
+  color: var(--ink-soft);
 }
 
 .recognize.loading {
@@ -295,7 +297,7 @@ h1 {
 
 .note {
   font-size: 13px;
-  color: #6b7280;
+  color: var(--muted);
 }
 
 .retry {
@@ -318,7 +320,7 @@ h1 {
 }
 
 .scope-tip strong {
-  color: #b0752f;
+  color: var(--brand-2-deep);
 }
 
 @media (max-width: 820px) {

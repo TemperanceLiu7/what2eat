@@ -162,11 +162,13 @@ function fillMockDemo() {
 }
 
 .kicker {
-  font-size: 12px;
-  letter-spacing: 0.12em;
+  display: inline-flex;
+  font-family: var(--font-hand);
+  font-size: 13px;
+  letter-spacing: 0.08em;
   color: var(--brand);
-  font-weight: 600;
-  margin-bottom: 6px;
+  font-weight: 700;
+  margin-bottom: 8px;
 }
 
 h1 {
