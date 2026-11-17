@@ -26,6 +26,8 @@ RUN pip install --no-cache-dir -r /tmp/req/requirements-cloud.txt \
     && rm -rf /tmp/req
 
 COPY backend/ /app/
+COPY docker-entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
 # 收集 admin 的 CSS/JS。
 # settings_prod 用的是 WhiteNoise 的 manifest 存储，必须用 prod 配置跑一遍才会生成 manifest；
@@ -41,11 +43,8 @@ RUN SECRET_KEY=build-only-not-used-at-runtime \
 
 EXPOSE 8000
 
-# 免费档没有 Shell、也没有一次性任务：建表与补数据只能放在启动命令里，且必须幂等。
-# migrate / bootstrap 都可重复执行，每次重启（含冷启动）跑一遍是安全的。
-#
-# 每一步都先 echo 再执行，失败时日志里能直接看出停在哪一步（平台只给日志，不给 Shell）：
-#   [boot] ... → migrate → [boot] 1/3 → bootstrap → [boot] 2/3 → gunicorn
-# 端口同时监听 $PORT(默认 8000) 和 8080：平台「目标端口」跟 PORT 不一致时，
-# 健康检查会一直失败而日志里毫无报错，双监听可以把这类不一致直接绕过去。
-CMD ["sh", "-c", "set -e; echo \"[boot] PORT='${PORT}' pwd=$(pwd)\"; python manage.py migrate --no-input; echo '[boot] 1/3 migrate OK'; python manage.py bootstrap; echo '[boot] 2/3 bootstrap OK'; MAIN_PORT=\"${PORT:-8000}\"; BIND=\"--bind 0.0.0.0:${MAIN_PORT}\"; if [ \"$MAIN_PORT\" != \"8080\" ]; then BIND=\"$BIND --bind 0.0.0.0:8080\"; fi; echo \"[boot] 3/3 gunicorn $BIND\"; exec gunicorn config.wsgi:application $BIND --workers 1 --threads 8 --timeout 90 --graceful-timeout 30 --capture-output --access-logfile - --error-logfile - --log-level info"]
+# 启动链：先起 gunicorn（端口先开），再 migrate、bootstrap，最后常驻等待。
+# 逻辑写在 docker-entrypoint.sh 里并用 ENTRYPOINT 调用，而不是 CMD：
+# 平台如果设过「自定义启动命令」，CMD 会被整个替换掉，ENTRYPOINT 不会，
+# 之前「migrate 跑完就再没有任何日志」就是这条启动链被顶掉了。
+ENTRYPOINT ["/entrypoint.sh"]
