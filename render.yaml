@@ -1,0 +1,65 @@
+# Render 蓝图：一键部署 what2eat 后端（Django + PostgreSQL）
+#
+# 用法 A（推荐）：Render 控制台 → New + → Blueprint → 选择 what2eat 仓库，
+#                Render 自动读取本文件，建库 + 建服务一步到位。
+# 用法 B（手动）：New + → Web Service，rootDir 填 backend，
+#                把下面 envVars 逐条抄进环境变量即可。
+#
+# 说明：
+# - 数据库用 Render 内置免费 Postgres（fromDatabase 自动注入 DATABASE_URL）。
+# - ⚠️ 免费档**不支持 preDeployCommand**（只有付费实例才有），所以建表与初始化
+#   全部塞进 startCommand：migrate → bootstrap（幂等补演示数据）→ gunicorn。
+#   三条命令都可重复执行，每次部署 / 重启都安全。
+# - ⚠️ 免费 Postgres 有有效期，到期前需导出；长期使用建议换 Neon：
+#   删掉 databases 段，把 DATABASE_URL 直接填成 Neon 连接串即可（见 DEPLOY.md）。
+# - ADMIN_PASSWORD / LLM_API_KEY 用 sync:false，需在控制台手动填，切勿提交进仓库。
+
+databases:
+  - name: what2eat-db
+    plan: free
+    databaseName: what2eat
+    user: what2eat
+
+services:
+  - type: web
+    name: what2eat-api
+    runtime: python
+    plan: free
+    rootDir: backend
+    buildCommand: pip install -r requirements-cloud.txt && python manage.py collectstatic --no-input
+    # 免费档没有 Shell / 一次性任务，也没有 preDeployCommand：
+    # 建表 + 补数据只能放在启动命令里，且必须幂等（重复执行不产生脏数据）。
+    startCommand: python manage.py migrate --no-input && python manage.py bootstrap && gunicorn config.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --threads 4 --timeout 60
+    # 探针查数据库连通性：库没通返回 503，Render 直接判定部署失败而不是"假成功"
+    healthCheckPath: /api/health/
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.7
+      - key: DJANGO_ENV
+        value: prod
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DB_ENGINE
+        value: postgres
+      - key: DATABASE_URL
+        fromDatabase:
+          name: what2eat-db
+          property: connectionString
+      - key: ALLOWED_HOSTS
+        value: .onrender.com,localhost
+      - key: CORS_ALLOWED_ORIGINS
+        value: https://what2eattt.pages.dev,https://what2eatt.pages.dev
+      - key: CSRF_TRUSTED_ORIGINS
+        value: https://what2eattt.pages.dev,https://what2eatt.pages.dev
+      # 后台账号：填了 ADMIN_PASSWORD 才会创建（用户名默认 admin）
+      - key: ADMIN_USERNAME
+        value: admin
+      - key: ADMIN_PASSWORD
+        sync: false
+      # 图片识别（可选）：不填则 /api/recognize/ 自动降级为手动填菜名
+      - key: LLM_API_KEY
+        sync: false
+      - key: LLM_BASE_URL
+        value: https://api.deepseek.com/v1
+      - key: LLM_MODEL
+        value: deepseek-chat

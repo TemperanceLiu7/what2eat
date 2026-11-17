@@ -14,8 +14,8 @@ export const ERROR_MESSAGES = {
   INVALID_DATA: '提交的数据不合法，请检查后重试',
 
   // ---- 传输层 / 鉴权兜底 ----
-  TIMEOUT: '请求超时，请检查网络后重试',
-  NETWORK: '网络连接失败，请稍后重试',
+  TIMEOUT: '服务响应超时，可能正在冷启动，请再试一次',
+  NETWORK: '连不上服务器，请检查网络后重试',
   UNAUTHORIZED: '登录状态已失效，请重新登录',
   FORBIDDEN: '没有权限执行这个操作',
   NOT_FOUND: '请求的内容不存在',

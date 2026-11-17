@@ -12,7 +12,7 @@ const active = computed(() => route.path)
     <header class="pc-header">
       <div class="pc-header-inner">
         <router-link to="/" class="brand">
-          <span class="brand-emoji">🍜</span>
+          <span class="brand-mark">吃</span>
           <span class="brand-name">今天吃什么</span>
           <span class="brand-tag">校园版</span>
         </router-link>
@@ -24,11 +24,13 @@ const active = computed(() => route.path)
         </el-menu>
 
         <router-link :to="isLoggedIn ? '/me' : '/login'" class="pc-user">
-          <el-tag v-if="isVerified" type="success" effect="light" round>
+          <el-tag v-if="isVerified" type="success" effect="plain" size="small">
             已认证 · {{ ui.user.studentId }}
           </el-tag>
-          <el-tag v-else-if="isLoggedIn" type="warning" effect="light" round>未核验 · 去核验</el-tag>
-          <el-tag v-else effect="plain" round>登录 / 注册</el-tag>
+          <el-tag v-else-if="isLoggedIn" type="warning" effect="plain" size="small">
+            未核验 · 去核验
+          </el-tag>
+          <el-tag v-else effect="plain" size="small">登录 / 注册</el-tag>
         </router-link>
       </div>
     </header>
@@ -54,48 +56,55 @@ const active = computed(() => route.path)
   position: sticky;
   top: 0;
   z-index: 100;
-  background: rgba(170, 181, 154, 0.86);
-  backdrop-filter: saturate(160%) blur(12px);
-  border-bottom: 1px dashed rgba(244, 237, 217, 0.6);
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
 }
 
 .pc-header-inner {
   width: min(var(--page-w), 100% - 48px);
   margin: 0 auto;
-  height: 68px;
+  height: 58px;
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 24px;
 }
 
 .brand {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 9px;
   flex-shrink: 0;
 }
 
-.brand-emoji {
-  font-size: 24px;
+/* 方章式图标：朱红实底 + 白字，替代原来的 emoji */
+.brand-mark {
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--brand);
+  color: #fff;
+  border-radius: 2px;
+  font-family: var(--font-serif);
+  font-size: 14px;
+  line-height: 1;
 }
 
 .brand-name {
-  font-family: var(--font-hand);
-  font-size: 20px;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  color: var(--kraft-deep);
+  font-family: var(--font-serif);
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
 }
 
 .brand-tag {
-  font-family: var(--font-hand);
-  font-size: 12px;
-  padding: 3px 10px;
-  border-radius: 6px;
-  background: var(--cream);
+  font-size: 11px;
+  padding: 2px 6px;
+  border: 1px solid var(--brand-line);
+  border-radius: 2px;
   color: var(--brand);
-  transform: rotate(-2deg);
-  box-shadow: var(--shadow-sm);
+  line-height: 1.4;
 }
 
 .pc-menu {
@@ -105,26 +114,29 @@ const active = computed(() => route.path)
 }
 
 .pc-menu :deep(.el-menu-item) {
-  font-family: var(--font-hand);
-  font-size: 15px;
+  font-size: 14px;
   color: var(--ink-soft);
-  border-radius: 10px;
-  margin: 0 4px;
-  border-bottom: none !important;
+  border-bottom: 2px solid transparent !important;
 }
 
 .pc-menu :deep(.el-menu-item:hover) {
-  background: rgba(244, 237, 217, 0.55) !important;
+  background: transparent !important;
+  color: var(--ink);
 }
 
 .pc-menu :deep(.el-menu-item.is-active) {
-  background: var(--kraft) !important;
-  color: var(--cream) !important;
-  font-weight: 700;
+  border-bottom-color: var(--ink) !important;
+  color: var(--ink);
+  font-weight: 600;
 }
 
 .pc-user {
   flex-shrink: 0;
+}
+
+.pc-user :deep(.el-tag) {
+  border-radius: 2px;
+  font-size: 12px;
 }
 
 .pc-main {
@@ -132,9 +144,11 @@ const active = computed(() => route.path)
 }
 
 .pc-footer {
-  padding: 18px 0 28px;
+  padding: 18px 0 26px;
   text-align: center;
   font-size: 12px;
-  color: rgba(255, 250, 238, 0.85);
+  color: var(--muted);
+  border-top: 1px solid var(--line);
+  margin-top: 24px;
 }
 </style>

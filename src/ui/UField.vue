@@ -37,9 +37,9 @@ const isMobile = useIsMobile()
 <style scoped>
 /* Vant 的 field 默认没有边框，单独用时看起来像悬空的文字，这里补一个浅底盒子 */
 .u-field--mobile {
-  background: var(--cream);
+  background: var(--surface-soft);
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   margin-bottom: 10px;
   padding: 2px 4px;
 }

@@ -23,6 +23,8 @@ from . import views
 app_name = "api"
 
 urlpatterns = [
+    # 运维
+    path("health/", views.HealthView.as_view(), name="health"),
     # 认证
     path("auth/register/", views.RegisterView.as_view(), name="register"),
     path("auth/token/", views.LoginView.as_view(), name="token"),

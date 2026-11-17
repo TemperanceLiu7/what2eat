@@ -5,11 +5,16 @@ import { isLoggedIn, isVerified } from '@/stores/app'
 <template>
   <div class="shell mobile">
     <header class="m-header">
-      <router-link to="/" class="m-brand">🍜 今天吃什么</router-link>
+      <router-link to="/" class="m-brand">
+        <span class="m-mark">吃</span>
+        <span>今天吃什么</span>
+      </router-link>
       <router-link :to="isLoggedIn ? '/me' : '/login'" class="m-user">
-        <van-tag v-if="isVerified" type="success" round>已认证</van-tag>
-        <van-tag v-else-if="isLoggedIn" round color="#f6e7d6" text-color="#b5673f">未核验</van-tag>
-        <van-tag v-else round color="#ece1c4" text-color="#6f5544">登录</van-tag>
+        <van-tag v-if="isVerified" plain color="var(--brand)" text-color="var(--brand)">已认证</van-tag>
+        <van-tag v-else-if="isLoggedIn" plain color="var(--brand)" text-color="var(--brand)">
+          未核验
+        </van-tag>
+        <van-tag v-else plain color="var(--ink-quiet)" text-color="var(--ink-quiet)">登录</van-tag>
       </router-link>
     </header>
 
@@ -17,7 +22,14 @@ import { isLoggedIn, isVerified } from '@/stores/app'
       <router-view />
     </main>
 
-    <van-tabbar route :border="false" active-color="#9a5230" inactive-color="#8d7663" safe-area-inset-bottom>
+    <van-tabbar
+      route
+      :border="false"
+      active-color="var(--ink)"
+      inactive-color="var(--muted)"
+      safe-area-inset-bottom
+      class="m-tabbar"
+    >
       <van-tabbar-item replace to="/personal" icon="home-o">个人</van-tabbar-item>
       <van-tabbar-item replace to="/community" icon="friends-o">社区</van-tabbar-item>
       <van-tabbar-item replace to="/me" icon="user-o">我的</van-tabbar-item>
@@ -34,22 +46,36 @@ import { isLoggedIn, isVerified } from '@/stores/app'
   position: sticky;
   top: 0;
   z-index: 100;
-  height: 52px;
+  height: 48px;
   padding: 0 14px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: rgba(170, 181, 154, 0.9);
-  backdrop-filter: saturate(160%) blur(12px);
-  border-bottom: 1px dashed rgba(244, 237, 217, 0.6);
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
   padding-top: env(safe-area-inset-top);
 }
 
 .m-brand {
-  font-family: var(--font-hand);
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--kraft-deep);
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--font-serif);
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.m-mark {
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--brand);
+  color: #fff;
+  border-radius: 2px;
+  font-size: 12px;
+  line-height: 1;
 }
 
 .m-user {
@@ -61,14 +87,11 @@ import { isLoggedIn, isVerified } from '@/stores/app'
   padding-bottom: 64px;
 }
 
-/* 底部 tabbar 米白纸条感 */
-:deep(.van-tabbar) {
-  background: var(--cream);
-  box-shadow: 0 -4px 16px rgba(84, 56, 42, 0.12);
+.m-tabbar {
+  border-top: 1px solid var(--line);
 }
 
-:deep(.van-tabbar-item__text) {
-  font-family: var(--font-hand);
-  font-size: 12px;
+.m-tabbar :deep(.van-tabbar-item__text) {
+  font-size: 11px;
 }
 </style>

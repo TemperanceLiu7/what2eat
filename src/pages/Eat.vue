@@ -117,7 +117,7 @@ async function submit() {
     <section class="head">
       <p class="kicker">个人板块</p>
       <h1>今天吃了啥</h1>
-      <p class="sub">拍一张，自动认出是什么菜，顺手就把你的口味存下来。</p>
+      <p class="sub">拍照或选图，自动识别菜品，记录会计入你的口味偏好。</p>
     </section>
 
     <section class="card panel">
@@ -126,7 +126,10 @@ async function submit() {
         <input type="file" accept="image/*" capture="environment" hidden @change="onFile" />
         <img v-if="image" :src="image" alt="吃的照片" />
         <span v-else class="picker-inner">
-          <span class="icon">📷</span>
+          <svg class="icon" viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 8.5A1.5 1.5 0 0 1 5.5 7h2.1l1.3-2h6.2l1.3 2h2.1A1.5 1.5 0 0 1 20 8.5V18a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 18z" />
+            <circle cx="12" cy="12.8" r="3.2" />
+          </svg>
           <span class="text">拍照 / 选图</span>
           <span class="hint">支持直接调用后置摄像头</span>
         </span>
@@ -162,15 +165,15 @@ async function submit() {
         <span class="label">这条记录</span>
         <div class="chips">
           <button class="chip" :class="{ active: visibility === 'private' }" @click="visibility = 'private'">
-            🔒 仅自己可见
+            仅自己可见
           </button>
           <button class="chip" :class="{ active: visibility === 'public' }" @click="visibility = 'public'">
-            🌐 公开到社区
+            公开到社区
           </button>
         </div>
       </div>
       <p class="scope-tip">
-        私密记录不会出现在社区、也不会被别人举报，但**一样计入你的口味偏好**和随机推荐的去重。
+        私密记录不会出现在社区、也不会被别人举报，但<strong>一样计入你的口味偏好</strong>和随机推荐的去重。
       </p>
 
       <div class="foot">
@@ -194,13 +197,11 @@ async function submit() {
 }
 
 .kicker {
-  display: inline-flex;
-  font-family: var(--font-hand);
-  font-size: 13px;
-  letter-spacing: 0.08em;
-  color: var(--brand);
-  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  color: var(--muted);
   margin-bottom: 8px;
+  text-transform: uppercase;
 }
 
 h1 {
@@ -224,7 +225,7 @@ h1 {
   align-items: center;
   justify-content: center;
   height: 180px;
-  border-radius: 14px;
+  border-radius: var(--radius-md);
   border: 1px dashed var(--brand-line);
   background: var(--surface-warm);
   overflow: hidden;
@@ -266,7 +267,7 @@ h1 {
 
 .recognize {
   background: var(--surface-soft);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   padding: 10px 12px;
   font-size: 13px;
   color: var(--ink-soft);

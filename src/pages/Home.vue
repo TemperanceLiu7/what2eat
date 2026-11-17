@@ -6,6 +6,7 @@ import { pickRandom, toggleFavorite, toggleLike } from '@/api'
 import { pushEaten, ui } from '@/stores/app'
 import { toast } from '@/composables/useToast'
 import { useIsMobile } from '@/composables/useIsMobile'
+import UButton from '@/ui/UButton.vue'
 
 const router = useRouter()
 const isMobile = useIsMobile()
@@ -15,26 +16,6 @@ const dish = ref(null)
 const rolling = ref(false)
 // 抽签序号：让「同一道菜再次中签」也能重播入场动画（key 里带上它）
 const drawSeq = ref(0)
-
-const confetti = ref([])
-let confettiSeq = 0
-function burstConfetti() {
-  const colors = ['#b5673f', '#e9b44c', '#f4edd9', '#8a5a44', '#7d9168', '#e8913f']
-  confetti.value = Array.from({ length: 24 }, (_, i) => ({
-    id: ++confettiSeq,
-    left: 6 + Math.random() * 88,
-    delay: Math.random() * 0.16,
-    duration: 1.4 + Math.random() * 1.1,
-    color: colors[i % colors.length],
-    rotate: Math.random() * 720 - 360,
-    drift: Math.random() * 140 - 70,
-    round: i % 3 === 0,
-    size: 6 + Math.random() * 6,
-  }))
-  window.setTimeout(() => {
-    confetti.value = []
-  }, 2800)
-}
 
 const liked = ref(false)
 const faved = ref(false)
@@ -52,6 +33,7 @@ const recent = computed(() => ui.eaten.slice(0, 3))
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
+/** 真接口会带 liked / favorited，mock 从本地记录里取 */
 function syncFlags(d) {
   if (!d) {
     liked.value = false
@@ -64,26 +46,23 @@ function syncFlags(d) {
 
 async function roll() {
   if (rolling.value) return
-  enableShake()
+  enableShake() // 顺便申请动作权限：iOS 必须放在用户手势里
   if (navigator.vibrate) navigator.vibrate(15)
 
   rolling.value = true
-  await sleep(520)
+  await sleep(520) // 与 CSS 里的 --draw-dur 对齐
   try {
     const picked = await pickRandom(source.value)
     dish.value = picked
     drawSeq.value += 1
     syncFlags(picked)
-    if (picked) {
-      pushEaten(picked)
-      burstConfetti()
-    }
+    if (picked) pushEaten(picked)
   } catch (err) {
     toast(err?.message || '抽签失败，稍后再试')
   } finally {
     rolling.value = false
   }
-  if (navigator.vibrate) navigator.vibrate(8)
+  if (navigator.vibrate) navigator.vibrate(8) // 结果落定时补一次轻震
 }
 
 function needLogin(err) {
@@ -115,12 +94,7 @@ async function fav() {
   }
 }
 
-// 由菜品热度派生「月售」，给商品卡一个真实的商业信息维度（纯展示，不改数据层）
-function monthlySales(d) {
-  return Math.max(28, Math.round((d.likes || 0) * 2.4 + (d.favorites || 0) * 3.1))
-}
-
-// 手机甩动抽签
+// ---- 手机甩动抽签（HTTPS 下才可用，按钮始终兜底） ----
 let motionBound = false
 async function enableShake() {
   if (motionBound) return
@@ -150,170 +124,117 @@ async function enableShake() {
 
 <template>
   <div class="page home">
-    <!-- 手帐主卡：米白波点纸框 + 棕纸内页 + 胶带枝叶 + 贴纸 -->
-    <section class="promo-banner">
-      <div class="dotted-frame">
-        <div class="frame-body">
-          <span class="tape-sprig tape-top" aria-hidden="true"></span>
-          <span class="tape-sprig tape-bottom" aria-hidden="true"></span>
-          <span class="sticker sticker-cup" aria-hidden="true">☕</span>
-          <span class="sticker sticker-cake" aria-hidden="true">🍰</span>
-          <div class="banner-copy">
-            <div class="banner-tag"><span class="tag-flash">⚡</span> 校园专属 · 每日精选</div>
-            <h1>今天吃<span>什么</span>？</h1>
-            <p>选择困难？一键随机，摇到就吃</p>
-            <div class="banner-points">
-              <span><i>✓</i> 全网比价</span>
-              <span><i>✓</i> 人气加权</span>
-              <span><i>✓</i> 学生认证</span>
-            </div>
-          </div>
-        </div>
-      </div>
+    <section class="hero">
+      <h1>今天吃什么</h1>
+      <p class="hero-sub">按来源筛一下，抽一道。抽到的会写进「最近」，不会连着重复。</p>
     </section>
 
-    <!-- 金刚区：来源分类图标导航 -->
-    <nav class="category-nav card" aria-label="推荐范围">
+    <div class="source-bar">
       <button
         v-for="s in SOURCES"
         :key="s.key"
-        class="category"
+        class="chip"
         :class="{ active: source === s.key }"
         @click="source = s.key"
       >
-        <span class="category-icon">{{ s.emoji }}</span>
-        <span class="category-label">{{ s.label }}</span>
+        {{ s.label }}
       </button>
-    </nav>
+    </div>
 
     <div class="home-grid">
-      <section class="draw">
-        <!-- 主抽签卡：商品卡质感 -->
-        <div class="draw-card card">
-          <div class="card-headline">
-            <div>
-              <h2>今日随机推荐</h2>
-              <p>摇一摇，把选择交给运气</p>
-            </div>
-            <span class="live-badge"><i></i> 实时更新</span>
+      <section class="draw card">
+        <div class="slot" :class="{ rolling }" :aria-busy="rolling" aria-live="polite">
+          <span class="slot-frame" aria-hidden="true"></span>
+
+          <div v-if="rolling" key="rolling" class="slot-inner slot-wait">
+            <p class="slot-name slot-name--quiet">抽签中</p>
           </div>
 
-          <div class="slot" :class="{ rolling }" :aria-busy="rolling" aria-live="polite">
-            <div class="confetti-layer" aria-hidden="true">
-              <i
-                v-for="b in confetti"
-                :key="b.id"
-                class="confetti"
-                :class="{ round: b.round }"
-                :style="{
-                  left: b.left + '%',
-                  background: b.color,
-                  width: b.size + 'px',
-                  height: (b.round ? b.size : b.size * 1.7) + 'px',
-                  '--delay': b.delay + 's',
-                  '--dur': b.duration + 's',
-                  '--rot': b.rotate + 'deg',
-                  '--drift': b.drift + 'px',
-                }"
-              />
+          <div v-else-if="dish" :key="`${dish.id}-${drawSeq}`" class="slot-inner slot-dish">
+              <p class="slot-no num">第 {{ drawSeq }} 次</p>
+              <h2 class="slot-name">{{ dish.name }}</h2>
+              <p class="slot-shop">{{ dish.shop.name }}</p>
+              <p class="slot-loc">{{ dish.shop.location }}</p>
+
+              <ul class="slot-meta">
+                <li class="price num">¥{{ dish.price }}</li>
+                <li>{{ dish.category }}</li>
+                <li>{{ dish.sourceLabel }}</li>
+                <li class="heat">热度 <span class="num">{{ heat }}</span></li>
+              </ul>
+
+              <p class="slot-desc">{{ dish.desc }}</p>
             </div>
 
-            <Transition name="reveal" mode="out-in">
-              <div v-if="dish" :key="`${dish.id}-${drawSeq}`" class="result">
-                <div class="result-pic rise" style="--d: 0ms">
-                  <span class="result-emoji">{{ dish.emoji }}</span>
-                  <span class="pic-badge">今日推荐</span>
-                </div>
-                <div class="result-info">
-                  <h3 class="result-name rise" style="--d: 60ms">{{ dish.name }}</h3>
-                  <div class="result-stats rise" style="--d: 100ms">
-                    <span class="score"><b>4.8</b> 分</span>
-                    <span class="sales">月售 {{ monthlySales(dish) }}</span>
-                    <span class="eta">≈ 15 分钟</span>
-                  </div>
-                  <div class="result-tags rise" style="--d: 140ms">
-                    <span class="rtag red">满20减5</span>
-                    <span class="rtag orange">{{ dish.category }}</span>
-                    <span class="rtag">{{ dish.sourceLabel }}</span>
-                  </div>
-                  <div class="result-bottom rise" style="--d: 190ms">
-                    <div class="price-wrap">
-                      <span class="currency">¥</span><span class="price">{{ dish.price }}</span>
-                      <span class="price-origin">¥{{ dish.price + 6 }}</span>
-                    </div>
-                    <div class="result-actions">
-                      <button class="icon-btn" :class="{ on: faved }" @click="fav" :aria-label="faved ? '取消收藏' : '收藏'">
-                        <span>{{ faved ? '★' : '☆' }}</span>
-                      </button>
-                      <button class="icon-btn" :class="{ on: liked }" @click="like" :aria-label="liked ? '取消点赞' : '点赞'">
-                        <span>{{ liked ? '♥' : '♡' }}</span>
-                      </button>
-                      <button class="go-btn" @click="router.push('/checkin')">去打卡 →</button>
-                    </div>
-                  </div>
-                  <p class="result-shop rise" style="--d: 230ms">{{ dish.shop.emoji }} {{ dish.shop.name }} · {{ dish.shop.location }} · 🔥 {{ heat }}</p>
-                </div>
-              </div>
-
-              <div v-else key="empty" class="result-empty">
-                <div class="empty-plate">🍽️</div>
-                <p class="empty-title">万事俱备，等你开摇</p>
-                <p class="empty-sub">点击下方按钮，抽取今天的专属美味</p>
-              </div>
-            </Transition>
+          <div v-else key="empty" class="slot-inner slot-wait">
+            <p class="slot-name slot-name--quiet">还没抽</p>
+            <p class="slot-loc">上面选好范围，点下面的按钮</p>
           </div>
-
-          <button class="roll-btn" :class="{ 'is-rolling': rolling }" @click="roll">
-            <span class="roll-icon" aria-hidden="true">🎲</span>
-            <span>{{ rolling ? '正在为你抽取…' : dish ? '再摇一次' : '摇一摇，帮我决定' }}</span>
-            <span class="roll-arrow" aria-hidden="true">→</span>
-          </button>
-          <p class="hint">
-            <template v-if="isMobile">也可以直接甩动手机抽签</template>
-            <template v-else>热度高的菜会被加权抽中</template>
-            · 当前范围 <b>{{ SOURCES.find((s) => s.key === source).label }}</b>
-          </p>
         </div>
 
-        <!-- 移动端：最近抽到 -->
-        <section v-if="recent.length" class="recent-rail">
-          <div class="rail-head"><h2>最近摇到</h2><span>自动避开，不重样</span></div>
-          <ul class="rail">
-            <li v-for="(d, i) in recent" :key="d.id" class="rail-item" :style="{ '--i': i }">
-              <span class="rail-emoji">{{ d.emoji }}</span>
-              <span class="rail-name">{{ d.name }}</span>
-              <span class="rail-price">¥{{ d.price }}</span>
-            </li>
-          </ul>
-        </section>
+        <UButton
+          class="shake-btn"
+          type="primary"
+          size="large"
+          block
+          :disabled="rolling"
+          @click="roll"
+        >
+          {{ rolling ? '抽签中…' : dish ? '再抽一道' : '抽一道' }}
+        </UButton>
+
+        <p class="hint">
+          <template v-if="isMobile">也可以直接甩动手机。</template>
+          <template v-else>热度高的菜权重略高。</template>
+          当前范围
+          <b>{{ SOURCES.find((s) => s.key === source).label }}</b>
+        </p>
+
+        <div v-if="dish" class="result-actions">
+          <UButton plain size="small" @click="fav">{{ faved ? '已收藏' : '收藏' }}</UButton>
+          <UButton plain size="small" @click="like">{{ liked ? '已点赞' : '点赞' }}</UButton>
+          <UButton plain size="small" @click="router.push('/checkin')">去打卡</UButton>
+        </div>
+      </section>
+
+      <!-- 移动端专属：最近抽到（横向滑动，桌面隐藏） -->
+      <section v-if="recent.length" class="recent-rail">
+        <div class="section-head">
+          <h2>最近抽到</h2>
+          <span class="sub">已自动避开</span>
+        </div>
+        <ul class="rail">
+          <li v-for="(d, i) in recent" :key="d.id" class="rail-item" :style="{ '--i': i }">
+            <span class="rail-name">{{ d.name }}</span>
+            <span class="rail-price num">¥{{ d.price }}</span>
+          </li>
+        </ul>
       </section>
 
       <aside class="side">
         <section class="side-card card">
-          <div class="side-head">
-            <h2>🔥 本周热销榜</h2>
-            <span>按点赞收藏</span>
+          <div class="section-head">
+            <h2>本周人气</h2>
+            <span class="sub">点赞 + 收藏</span>
           </div>
-          <ol class="rank">
+          <ul class="rank">
             <li v-for="(d, i) in hot" :key="d.id">
-              <span class="rank-no" :class="`rank-no-${i + 1}`">{{ i + 1 }}</span>
-              <span class="rank-thumb">{{ d.emoji }}</span>
-              <span class="rank-mid">
-                <span class="rank-name">{{ d.name }}</span>
-                <span class="rank-sub">月售 {{ monthlySales(d) }} · ⭐ 4.8</span>
-              </span>
-              <span class="rank-price">¥{{ d.price }}</span>
+              <span class="no num" :class="{ 'no-top': i === 0 }">{{ i + 1 }}</span>
+              <span class="rank-name">{{ d.name }}</span>
+              <span class="rank-heat num">{{ d.heat }}</span>
             </li>
-          </ol>
+          </ul>
         </section>
 
         <section v-if="recent.length" class="side-card card side-recent">
-          <div class="side-head"><h2>🕒 最近摇到</h2><span>已自动避开</span></div>
+          <div class="section-head">
+            <h2>最近摇到</h2>
+            <span class="sub">已自动避开</span>
+          </div>
           <ul class="recent">
             <li v-for="d in recent" :key="d.id">
-              <span class="rank-thumb">{{ d.emoji }}</span>
               <span class="rank-name">{{ d.name }}</span>
-              <span class="rank-price">¥{{ d.price }}</span>
+              <span class="rank-heat num">{{ d.price }} 元</span>
             </li>
           </ul>
         </section>
@@ -325,216 +246,59 @@ async function enableShake() {
 <style scoped>
 .home {
   --draw-dur: 0.52s;
-  --rise-dur: 0.38s;
-  --hot: #a85a33;
-  --hot-deep: #8a4527;
-  --gold: #e9b44c;
 }
 
-/* ---------- 手帐主卡（波点纸框 + 棕纸内页） ---------- */
-.promo-banner {
+.hero {
+  padding: var(--space-4) 0 18px;
+  border-bottom: 1px solid var(--line);
   margin-bottom: 18px;
 }
 
-.frame-body {
-  position: relative;
-  min-height: 208px;
-  padding: 36px 36px;
-  color: var(--cream);
+.hero h1 {
+  font-size: var(--fs-2xl);
+  line-height: 1.2;
 }
 
-.tape-top {
-  position: absolute;
-  top: 5px;
-  left: 26px;
-  right: 26px;
-}
-
-.tape-bottom {
-  position: absolute;
-  bottom: 5px;
-  left: 26px;
-  right: 26px;
-}
-
-.sticker-cup {
-  position: absolute;
-  top: 18px;
-  right: 28px;
-  font-size: 34px;
-  transform: rotate(8deg);
-}
-
-.sticker-cake {
-  position: absolute;
-  bottom: 20px;
-  left: 24px;
-  font-size: 30px;
-  transform: rotate(-7deg);
-}
-
-.banner-copy {
-  position: relative;
-  z-index: 1;
-  max-width: 66%;
-}
-
-.banner-tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  padding: 6px 12px;
-  border-radius: 999px;
-  background: rgba(244, 237, 217, 0.16);
-  border: 1px solid rgba(244, 237, 217, 0.3);
-  margin-bottom: 14px;
-}
-
-.tag-flash { font-size: 13px; }
-
-.banner-copy h1 {
-  font-family: var(--font-hand);
-  font-size: 42px;
-  font-weight: 700;
-  line-height: 1.15;
-  letter-spacing: 0.01em;
-  color: var(--cream);
-  text-shadow: 0 2px 8px rgba(60, 30, 18, 0.25);
-}
-.banner-copy h1 span { color: var(--brand-2); }
-
-.banner-copy > p {
+.hero-sub {
   margin-top: 8px;
-  font-size: 16px;
-  font-weight: 500;
-  opacity: 0.96;
+  color: var(--muted);
+  font-size: var(--fs-sm);
+  line-height: 1.7;
+  max-width: 46em;
 }
 
-.banner-points {
+.source-bar {
   display: flex;
+  gap: 8px;
   flex-wrap: wrap;
-  gap: 8px 18px;
-  margin-top: 20px;
-}
-.banner-points span {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 13px;
-  font-weight: 600;
-}
-.banner-points i {
-  font-style: normal;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 17px;
-  height: 17px;
-  border-radius: 50%;
-  background: var(--cream);
-  color: var(--kraft-deep);
-  font-size: 11px;
-  font-weight: 800;
-}
-
-/* ---------- 金刚区 ---------- */
-.category-nav {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 4px;
-  padding: 18px 10px;
   margin-bottom: 18px;
 }
 
-.category {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 4px;
-  border: none;
-  background: transparent;
-  border-radius: 14px;
-  transition: transform var(--dur-fast) var(--ease-out), background var(--dur-fast) var(--ease-out);
-}
-.category:hover { transform: translateY(-3px); background: var(--brand-soft); }
-.category.active { background: var(--surface-soft); }
-
-.category-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 52px;
-  height: 52px;
-  font-size: 26px;
-  border-radius: 18px;
-  background: linear-gradient(145deg, #f6e7d6, #ecd9bd);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 4px 10px rgba(138, 90, 68, 0.14);
-  transition: all var(--dur-fast) var(--ease-out);
-}
-.category.active .category-icon {
-  background: var(--brand-grad);
-  box-shadow: 0 6px 16px var(--brand-glow);
-  transform: scale(1.06);
-}
-.category-label { font-size: 13px; font-weight: 600; color: var(--ink-soft); }
-.category.active .category-label { color: var(--hot); font-weight: 700; }
-
-/* ---------- 主栅格 ---------- */
 .home-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.55fr) minmax(280px, 0.85fr);
+  grid-template-columns: minmax(0, 1.55fr) minmax(260px, 0.85fr);
   gap: 18px;
   align-items: start;
 }
-.draw, .recent-rail { min-width: 0; }
 
-.draw-card { padding: 22px; }
-
-.card-headline {
+.draw {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 16px;
-}
-.card-headline h2 { font-family: var(--font-hand); font-size: 20px; font-weight: 700; }
-.card-headline p { margin-top: 4px; font-size: 12px; color: var(--muted); }
-
-.live-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--hot);
-  background: var(--brand-soft);
-  border-radius: 999px;
-  padding: 6px 10px;
-  white-space: nowrap;
-}
-.live-badge i {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--hot);
-  animation: live-pulse 1.6s ease-in-out infinite;
-}
-@keyframes live-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(168, 90, 51, 0.5); }
-  50% { box-shadow: 0 0 0 5px rgba(168, 90, 51, 0); }
+  flex-direction: column;
 }
 
-/* ---------- 抽签舞台 / 商品卡 ---------- */
+/* 横向滑动的子项会把 grid 的自动最小尺寸撑大，必须显式归零，否则整页横向溢出 */
+.draw,
+.recent-rail {
+  min-width: 0;
+}
+
+/* ---------- 抽签面板：一张菜单卡 ---------- */
+
 .slot {
   position: relative;
-  isolation: isolate;
-  border-radius: 16px;
-  background: var(--surface-warm);
   border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
   min-height: 250px;
   display: flex;
   align-items: center;
@@ -542,328 +306,294 @@ async function enableShake() {
   margin-bottom: 16px;
   overflow: hidden;
 }
-.slot::before {
-  content: '';
+
+/* 内圈虚线：食堂贴纸/菜单牌的那种框，比阴影便宜也更好看 */
+.slot-frame {
   position: absolute;
-  inset: -18%;
-  z-index: 0;
+  inset: 9px;
+  border: 1px dashed var(--line);
+  border-radius: 2px;
   pointer-events: none;
-  opacity: 0;
-  background: radial-gradient(circle at 50% 46%, rgba(181, 103, 63, 0.2) 0%, transparent 62%);
-}
-.slot::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: 2;
-  pointer-events: none;
-  opacity: 0;
-  transform: translateX(-120%);
-  background: linear-gradient(105deg, transparent 32%, rgba(255, 255, 255, 0.75) 48%, transparent 64%);
-}
-.slot.rolling { animation: slot-flow var(--draw-dur) var(--ease-out) both; }
-.slot.rolling::before { animation: aura-pulse var(--draw-dur) var(--ease-out) both; }
-.slot.rolling::after { animation: sheen-sweep var(--draw-dur) var(--ease-out) both; }
-
-@keyframes slot-flow {
-  0% { background-position: 0% 50%; }
-  55% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-}
-@keyframes aura-pulse {
-  0% { opacity: 0; transform: scale(0.9); }
-  35% { opacity: 0.9; transform: scale(1); }
-  70% { opacity: 0.45; transform: scale(1.06); }
-  100% { opacity: 0; transform: scale(1.02); }
-}
-@keyframes sheen-sweep {
-  0% { opacity: 0; transform: translateX(-120%); }
-  20% { opacity: 1; }
-  70% { opacity: 0.9; transform: translateX(120%); }
-  100% { opacity: 0; transform: translateX(120%); }
 }
 
-.confetti-layer { position: absolute; inset: 0; z-index: 3; pointer-events: none; overflow: hidden; border-radius: inherit; }
-.confetti {
-  position: absolute; top: -14px; display: block; border-radius: 2px; opacity: 0;
-  animation: confetti-fall var(--dur) var(--ease-out) var(--delay) forwards;
-}
-.confetti.round { border-radius: 50%; }
-@keyframes confetti-fall {
-  0% { opacity: 0; transform: translate3d(0, -10px, 0) rotate(0); }
-  8% { opacity: 1; }
-  100% { opacity: 0; transform: translate3d(var(--drift), 320px, 0) rotate(var(--rot)); }
+.slot.rolling .slot-frame {
+  border-color: var(--brand-line);
 }
 
-.result {
+.slot-inner {
   position: relative;
-  z-index: 1;
-  display: flex;
-  gap: 18px;
+  text-align: center;
+  padding: 30px 22px;
   width: 100%;
-  padding: 22px;
-  animation: card-in var(--draw-dur) var(--ease-out) both;
-}
-@keyframes card-in {
-  0% { opacity: 0; transform: scale(0.94) translateY(12px); filter: blur(6px); }
-  100% { opacity: 1; transform: scale(1) translateY(0); filter: blur(0); }
 }
 
-.result-pic {
-  position: relative;
-  flex: 0 0 132px;
-  height: 132px;
-  border-radius: 16px;
-  background: linear-gradient(145deg, #f6e7d6, #ecd9bd);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 8px 18px rgba(138, 90, 68, 0.16);
-}
-.result-emoji { font-size: 74px; line-height: 1; filter: drop-shadow(0 8px 10px rgba(120, 60, 30, 0.2)); }
-.pic-badge {
-  position: absolute;
-  left: -6px;
-  top: 10px;
-  font-size: 10px;
-  font-weight: 700;
-  color: #fff;
-  background: var(--brand-grad);
-  padding: 4px 9px 4px 8px;
-  border-radius: 6px 6px 6px 0;
-  box-shadow: 0 3px 8px var(--brand-glow);
-}
-
-.result-info { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }
-.result-name { font-family: var(--font-hand); font-size: 24px; font-weight: 700; letter-spacing: 0.01em; line-height: 1.3; }
-.result-stats {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin-top: 8px;
-  font-size: 12px;
-  color: var(--ink-soft);
-}
-.result-stats .score { color: var(--gold); font-weight: 700; }
-.result-stats .score b { font-size: 15px; }
-.result-stats .sales, .result-stats .eta { position: relative; }
-.result-stats .sales::after, .result-stats .eta::after {
-  content: '';
-  position: absolute;
-  right: -6px;
-  top: 50%;
-  width: 1px;
-  height: 10px;
-  background: var(--line);
-  transform: translateY(-50%);
-}
-.result-stats .eta::after { display: none; }
-
-.result-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
-.rtag {
+.slot-no {
   font-size: 11px;
-  font-weight: 600;
-  padding: 3px 8px;
-  border-radius: 5px;
-  color: var(--ink-soft);
-  background: var(--surface-soft);
-  border: 1px solid transparent;
-}
-.rtag.red { color: var(--hot); background: var(--brand-soft); border-color: var(--brand-line-soft); }
-.rtag.orange { color: var(--brand-2-deep); background: #fbf1d8; border-color: #ecd9a8; }
-
-.result-bottom {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 12px;
-  margin-top: auto;
-  padding-top: 14px;
-}
-.price-wrap { display: flex; align-items: baseline; color: var(--hot); }
-.price-wrap .currency { font-size: 15px; font-weight: 700; }
-.price-wrap .price { font-size: 32px; font-weight: 800; line-height: 1; letter-spacing: -0.02em; }
-.price-wrap .price-origin { font-size: 12px; color: var(--muted); text-decoration: line-through; margin-left: 8px; }
-
-.result-actions { display: flex; align-items: center; gap: 8px; }
-.icon-btn {
-  width: 34px;
-  height: 34px;
-  border-radius: 10px;
-  border: 1px solid var(--line);
-  background: var(--cream);
+  letter-spacing: 0.08em;
   color: var(--muted);
-  font-size: 20px;
-  line-height: 1;
-  display: inline-flex;
-  align-items: center;
+  margin-bottom: 10px;
+}
+
+.slot-name {
+  font-size: var(--fs-xl);
+  font-family: var(--font-serif);
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.slot-name--quiet {
+  color: var(--ink-quiet);
+  font-weight: 400;
+}
+
+.slot-shop {
+  margin-top: 10px;
+  font-size: var(--fs-base);
+  color: var(--ink-soft);
+}
+
+.slot-loc {
+  margin-top: 4px;
+  font-size: var(--fs-xs);
+  color: var(--muted);
+}
+
+/* 元信息用一行"·"分隔的文字，而不是一排彩色胶囊 */
+.slot-meta {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
   justify-content: center;
-  transition: all var(--dur-fast) var(--ease-out);
+  gap: 0;
+  margin: 14px 0 0;
+  padding: 0;
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
 }
-.icon-btn:hover { transform: scale(1.08); border-color: var(--brand-line); color: var(--hot); }
-.icon-btn.on { color: var(--hot); border-color: var(--brand-line); background: var(--brand-soft); }
-.go-btn {
-  border: none;
-  border-radius: 10px;
-  padding: 9px 14px;
-  font-size: 13px;
-  font-weight: 700;
-  color: #fff;
-  background: var(--brand-grad);
-  box-shadow: 0 5px 12px var(--brand-glow);
-  transition: transform var(--dur-fast) var(--ease-out), box-shadow var(--dur-fast) var(--ease-out);
+
+.slot-meta li + li::before {
+  content: '·';
+  margin: 0 9px;
+  color: var(--muted);
 }
-.go-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 18px rgba(168, 90, 51, 0.38); }
 
-.result-shop { margin-top: 12px; font-size: 12px; color: var(--muted); }
+.price {
+  font-size: var(--fs-md);
+  color: var(--brand);
+}
 
-.result-empty { position: relative; z-index: 1; text-align: center; padding: 30px 20px; }
-.empty-plate { font-size: 68px; line-height: 1; filter: drop-shadow(0 8px 12px rgba(120, 60, 30, 0.15)); }
-.empty-title { margin-top: 14px; font-family: var(--font-hand); font-size: 18px; font-weight: 700; color: var(--ink-soft); }
-.empty-sub { margin-top: 6px; font-size: 13px; color: var(--muted); }
+.heat {
+  color: var(--muted);
+}
 
-/* ---------- 主按钮 ---------- */
-.roll-btn {
-  position: relative;
-  width: 100%;
-  min-height: 56px;
-  border: none;
-  border-radius: 14px;
-  color: var(--cream);
-  font-family: var(--font-hand);
-  font-size: 17px;
-  font-weight: 700;
-  letter-spacing: 0.03em;
-  cursor: pointer;
-  background: var(--brand-grad);
-  background-size: 200% 100%;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 8px 20px var(--brand-glow);
+.slot-desc {
+  margin-top: 14px;
+  font-size: var(--fs-sm);
+  color: var(--muted);
+  line-height: 1.7;
+  max-width: 34em;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* 结果入场：一次性淡入 + 4px 位移，不做离场动画（避免 out-in 卡住新内容） */
+.slot-dish {
+  animation: slot-in 0.18s var(--ease-out);
+}
+
+.slot-wait {
+  animation: slot-in 0.12s linear;
+}
+
+/* 只动位置不动透明度：动画被节流时内容依然可见，不会出现"空卡片" */
+@keyframes slot-in {
+  from {
+    transform: translateY(4px);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.shake-btn {
+  max-width: 320px;
+  margin: 0 auto;
+}
+
+.hint {
+  margin-top: 12px;
+  font-size: var(--fs-xs);
+  color: var(--muted);
+  text-align: center;
+}
+
+.hint b {
+  color: var(--ink-soft);
+  font-weight: 600;
+}
+
+.result-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+  justify-content: center;
+}
+
+/* ---------- 侧栏 ---------- */
+
+.side {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.rank,
+.recent {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.rank li,
+.recent li {
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: 10px;
-  animation: roll-shine 3.2s var(--ease-out) infinite;
-  transition: transform var(--dur-fast) var(--ease-out), box-shadow var(--dur-fast) var(--ease-out);
-}
-.roll-btn:hover { transform: translateY(-2px); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 12px 26px rgba(168, 90, 51, 0.42); }
-.roll-btn:active { transform: translateY(0) scale(0.99); }
-@keyframes roll-shine {
-  0%, 100% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-}
-.roll-icon { font-size: 22px; animation: dice-wiggle 2.4s var(--ease-out) infinite; }
-.roll-arrow { font-size: 20px; font-weight: 400; opacity: 0.9; }
-@keyframes dice-wiggle {
-  0%, 100% { transform: rotate(-10deg); }
-  50% { transform: rotate(12deg); }
-}
-.roll-btn.is-rolling { animation: btn-pulse var(--draw-dur) var(--ease-out) both; }
-.roll-btn.is-rolling .roll-icon { animation: none; }
-@keyframes btn-pulse {
-  0% { box-shadow: 0 0 0 0 rgba(168, 90, 51, 0.5), inset 0 1px 0 rgba(255,255,255,.25); transform: scale(1); }
-  50% { box-shadow: 0 0 0 10px rgba(168, 90, 51, 0), inset 0 1px 0 rgba(255,255,255,.25); transform: scale(1.015); }
-  100% { box-shadow: 0 0 0 0 rgba(168, 90, 51, 0), inset 0 1px 0 rgba(255,255,255,.25); transform: scale(1); }
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: var(--fs-sm);
 }
 
-.hint { margin-top: 12px; font-size: 12px; color: var(--muted); text-align: center; line-height: 1.7; }
-.hint b { color: var(--hot); }
-
-/* ---------- 入场错峰 ---------- */
-.rise { animation: rise var(--rise-dur) var(--ease-back) both; animation-delay: var(--d, 0ms); }
-@keyframes rise {
-  from { opacity: 0; transform: translateY(10px) scale(0.97); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
+.rank li:last-child,
+.recent li:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
 }
-.reveal-enter-active { transition: opacity 0.26s var(--ease-out), transform 0.44s var(--ease-back), filter 0.44s var(--ease-out); }
-.reveal-leave-active { transition: opacity 0.16s ease, transform 0.2s ease, filter 0.2s ease; }
-.reveal-enter-from { opacity: 0; transform: translateY(18px) scale(0.94); filter: blur(7px); }
-.reveal-leave-to { opacity: 0; transform: translateY(-8px) scale(0.98); filter: blur(5px); }
 
-/* ---------- 侧栏热销榜 ---------- */
-.side { display: flex; flex-direction: column; gap: var(--space-16); }
-.side-card { padding: 18px; }
-.side-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
-.side-head h2 { font-family: var(--font-hand); font-size: 16px; font-weight: 700; }
-.side-head span { font-size: 11px; color: var(--muted); }
-
-.rank, .recent { list-style: none; margin: 0; padding: 0; }
-.rank li { display: flex; align-items: center; gap: 8px; padding: 10px 0; border-bottom: 1px dashed var(--line); }
-.rank li:last-child, .recent li:last-child { border-bottom: none; }
-.rank-no {
-  flex: 0 0 20px; height: 20px; border-radius: 6px;
-  background: var(--surface-soft); color: var(--muted);
-  font-size: 11px; font-weight: 800;
-  display: inline-flex; align-items: center; justify-content: center;
+/* 名次只用等宽数字，第一名给朱红，不再做彩色方块 */
+.no {
+  width: 16px;
+  color: var(--muted);
+  font-size: var(--fs-xs);
+  flex-shrink: 0;
 }
-.rank-no-1 { background: linear-gradient(135deg, #f2c14e, #e09a2e); color: #fff; }
-.rank-no-2 { background: linear-gradient(135deg, #d7dbe0, #aeb4bd); color: #fff; }
-.rank-no-3 { background: linear-gradient(135deg, #d9a97f, #c77a45); color: #fff; }
-.rank-thumb {
-  flex: 0 0 38px; height: 38px; border-radius: 10px;
-  background: linear-gradient(145deg, #f6e7d6, #ecd9bd);
-  display: inline-flex; align-items: center; justify-content: center; font-size: 20px;
-}
-.rank-mid { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-.rank-name { font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.rank-sub { font-size: 11px; color: var(--muted); }
-.rank-price { font-size: 13px; font-weight: 800; color: var(--hot); white-space: nowrap; }
-.recent li { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px dashed var(--line); }
-.recent .rank-name { flex: 1; }
 
-/* ---------- 最近摇到（移动端横滑） ---------- */
-.recent-rail { display: none; }
-.rail-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin: 4px 0 8px; }
-.rail-head h2 { font-family: var(--font-hand); font-size: 16px; font-weight: 700; }
-.rail-head span { font-size: 11px; color: var(--muted); }
-.rail { list-style: none; margin: 0; padding: 4px 0 8px; display: flex; gap: 10px; overflow-x: auto; scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
-.rail::-webkit-scrollbar { display: none; }
+.no-top {
+  color: var(--brand);
+}
+
+.rank-name {
+  flex: 1;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rank-heat {
+  font-size: var(--fs-xs);
+  color: var(--muted);
+}
+
+/* ---------- 最近抽到（移动端横向滑动条） ---------- */
+
+.recent-rail {
+  display: none;
+}
+
+.rail {
+  list-style: none;
+  margin: 0;
+  padding: var(--space-4) 0 var(--space-8);
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.rail::-webkit-scrollbar {
+  display: none;
+}
+
 .rail-item {
-  flex: 0 0 auto; width: 132px; scroll-snap-align: start;
-  display: flex; flex-direction: column; gap: 4px; padding: 10px 12px;
-  border-radius: 12px; background: var(--surface); border: 1px solid var(--line);
-  box-shadow: var(--shadow-sm);
-  animation: rise var(--rise-dur) var(--ease-back) both;
-  animation-delay: calc(var(--i, 0) * 60ms);
+  flex: 0 0 auto;
+  width: 124px;
+  scroll-snap-align: start;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface);
 }
-.rail-emoji { font-size: 24px; line-height: 1; }
-.rail-name { font-size: 12px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.rail-price { font-size: 12px; font-weight: 800; color: var(--hot); }
+
+.rail-name {
+  font-size: var(--fs-sm);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rail-price {
+  font-size: var(--fs-xs);
+  color: var(--brand);
+}
 
 @media (max-width: 820px) {
-  .frame-body { min-height: 176px; padding: 28px 22px; }
-  .banner-copy { max-width: 90%; }
-  .banner-copy h1 { font-size: 26px; }
-  .banner-copy > p { font-size: 13px; }
-  .banner-points { margin-top: 14px; gap: 6px 12px; }
-  .banner-points span { font-size: 11px; }
-  .sticker-cup { font-size: 26px; right: 16px; }
-  .sticker-cake { font-size: 24px; left: 14px; }
-  .category-nav { padding: 14px 4px; gap: 0; }
-  .category-icon { width: 46px; height: 46px; font-size: 22px; border-radius: 14px; }
-  .category-label { font-size: 11px; }
-  .home-grid { grid-template-columns: 1fr; }
-  .draw-card { padding: 16px; }
-  .result { gap: 12px; padding: 14px; }
-  .result-pic { flex-basis: 100px; height: 100px; }
-  .result-emoji { font-size: 56px; }
-  .result-name { font-size: 19px; }
-  .result-bottom { flex-wrap: wrap; }
-  .price-wrap .price { font-size: 27px; }
-  .result-actions { width: 100%; justify-content: flex-end; }
-  .roll-btn { font-size: 16px; }
-  .recent-rail { display: block; }
-  .recent-rail .rail { margin: 0 -14px; padding: 4px 14px 8px; }
-  .side-recent { display: none; }
+  .hero h1 {
+    font-size: 24px;
+  }
+  .source-bar {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    margin-bottom: 14px;
+    scrollbar-width: none;
+  }
+  .source-bar::-webkit-scrollbar {
+    display: none;
+  }
+  .home-grid {
+    grid-template-columns: 1fr;
+  }
+  .slot {
+    min-height: 250px;
+  }
+  .shake-btn {
+    max-width: none;
+  }
+  .slot-name {
+    font-size: 20px;
+  }
+  .result-actions {
+    justify-content: stretch;
+  }
+  .result-actions > * {
+    flex: 1;
+  }
+
+  /* 移动端才显示横向条，并让两侧出血到屏幕边缘 */
+  .recent-rail {
+    display: block;
+  }
+  .recent-rail .rail {
+    margin: 0 -14px;
+    padding: var(--space-4) 14px var(--space-8);
+  }
+  /* 桌面侧栏那张「最近摇到」在手机上收起来，避免和横向条重复 */
+  .side-recent {
+    display: none;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .slot.rolling, .slot.rolling::before, .slot.rolling::after,
-  .roll-btn, .roll-icon, .live-badge i, .rise, .rail-item {
+  .slot-dish,
+  .slot-wait {
     animation: none;
   }
-  .confetti { display: none; }
-  .reveal-enter-active, .reveal-leave-active { transition: opacity var(--dur-fast) linear; }
-  .reveal-enter-from, .reveal-leave-to { opacity: 0; transform: none; filter: none; }
 }
 </style>

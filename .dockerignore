@@ -1,0 +1,24 @@
+# 镜像里只需要 backend/，其余一律不进构建上下文（更小的上下文 = 更快的构建）
+src/
+public/
+node_modules/
+dist/
+docs/
+scripts/
+*.zip
+*.log
+*.md
+
+# 后端本地残留
+backend/.venv/
+backend/staticfiles/
+backend/media/
+backend/db.sqlite3
+backend/*.log
+**/__pycache__/
+**/*.pyc
+
+.git/
+.github/
+.vscode/
+.DS_Store
