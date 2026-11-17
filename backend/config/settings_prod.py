@@ -40,11 +40,20 @@ if DATABASES["default"]["ENGINE"] not in {  # noqa: F405
 if DATABASES["default"].get("HOST", "") in {"", "127.0.0.1", "localhost"}:  # noqa: F405
     import os
 
-    _raw_url = os.environ.get("DATABASE_URL")
-    if _raw_url is None:
-        _url_state = "DATABASE_URL 这个变量名在容器里不存在"
-    else:
-        _url_state = f"DATABASE_URL 存在但长度为 {len(_raw_url)}（值为空或只有空白）"
+    _url_keys = (
+        "DATABASE_URL",
+        "DATABASE_PUBLIC_URL",
+        "POSTGRES_URL",
+        "POSTGRESQL_URL",
+        "DB_URL",
+    )
+    _url_states = []
+    for _k in _url_keys:
+        _v = os.environ.get(_k)
+        _url_states.append(
+            f"{_k}=不存在" if _v is None else f"{_k}=长度{len(_v)}"
+        )
+    _url_state = "，".join(_url_states)
 
     _db_keys = sorted(
         k
@@ -54,11 +63,12 @@ if DATABASES["default"].get("HOST", "") in {"", "127.0.0.1", "localhost"}:  # no
 
     raise ImproperlyConfigured(
         f"生产环境的数据库地址是 {DATABASES['default'].get('HOST', '')!r}，"
-        f"说明容器没拿到可用的 DATABASE_URL：{_url_state}；"
+        f"说明容器没拿到任何可用的连接串（{_url_state}）；"
         f"容器里实际收到的数据库相关变量名（带引号，注意有没有多余空格）：{_db_keys or '（一个都没有）'}。"
         "正解：Railway → 打开 Postgres 服务 → Variables → 复制 DATABASE_URL 的**值**，"
-        "回到本服务 Variables，变量名填 DATABASE_URL，值直接粘贴那串（以 postgresql:// 开头），"
-        "不要手打 ${{...}} 引用；同时确认 DB_ENGINE=postgres。"
+        "回到本服务 Variables → 右上角 RAW Editor，按 `DATABASE_URL=postgresql://...` 整行粘贴后保存"
+        "（不要手打 ${{...}} 引用，不要加引号，结尾不要带空格）；同时确认 DB_ENGINE=postgres。"
+        "也支持 DATABASE_PUBLIC_URL / POSTGRES_URL / DB_URL，以及 PGHOST+PGPASSWORD 这类分项变量。"
     )
 
 # 跨域只认白名单（不做通配）

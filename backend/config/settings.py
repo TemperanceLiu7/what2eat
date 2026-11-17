@@ -217,7 +217,23 @@ elif DB_ENGINE in {"postgres", "postgresql", "pgsql"}:
             options["prepare_threshold"] = None
         return options
 
-    db_url = env("DATABASE_URL")
+    # 平台给的连接串变量名不统一（Railway / Heroku / Render 各有习惯），
+    # 这里按优先级取第一个非空值。空串一律当作没有——平台把悬空引用解析成空串时，
+    # 变量名还在、值是 ""，光看变量名分不出来，所以必须按「值是否非空」来判。
+    _URL_KEYS = (
+        "DATABASE_URL",
+        "DATABASE_PUBLIC_URL",
+        "POSTGRES_URL",
+        "POSTGRESQL_URL",
+        "DB_URL",
+    )
+    db_url = ""
+    for _url_key in _URL_KEYS:
+        _url_val = (os.environ.get(_url_key) or "").strip()
+        if _url_val:
+            db_url = _url_val
+            break
+
     if db_url:
         parsed = urlparse(db_url)
         _host = parsed.hostname or ""
@@ -235,15 +251,21 @@ elif DB_ENGINE in {"postgres", "postgresql", "pgsql"}:
             }
         }
     else:
-        _host = env("DB_HOST", "127.0.0.1") or "127.0.0.1"
+        # 没拿到连接串时退回「分项变量」：先认本项目的 DB_*，再认 Heroku / Railway 的 PG*。
+        # 有些平台的 Postgres 只注入 PGHOST/PGPASSWORD 这一套，不注入完整 URL。
+        _host = (
+            (env("DB_HOST") or "").strip()
+            or (os.environ.get("PGHOST") or "").strip()
+            or "127.0.0.1"
+        )
         DATABASES = {
             "default": {
                 "ENGINE": "django.db.backends.postgresql",
-                "NAME": env("DB_NAME", "what2eat"),
-                "USER": env("DB_USER", "postgres"),
-                "PASSWORD": env("DB_PASSWORD", ""),
+                "NAME": env("DB_NAME") or os.environ.get("PGDATABASE") or "what2eat",
+                "USER": env("DB_USER") or os.environ.get("PGUSER") or "postgres",
+                "PASSWORD": env("DB_PASSWORD") or os.environ.get("PGPASSWORD") or "",
                 "HOST": _host,
-                "PORT": env("DB_PORT", "5432"),
+                "PORT": str(env("DB_PORT") or os.environ.get("PGPORT") or "5432"),
                 "CONN_MAX_AGE": env_int("DB_CONN_MAX_AGE", 60),
                 "OPTIONS": _pg_options(_host, "prefer"),
             }
