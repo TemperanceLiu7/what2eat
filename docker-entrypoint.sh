@@ -23,6 +23,18 @@ echo "[boot] pwd=$(pwd)"
 echo "[boot] PORT='${PORT:-<未设置>}' 监听参数: ${BIND}"
 echo "[boot] python: $(python -V 2>&1)"
 
+# 代码版本标记 + 真实生效的 Host 白名单。
+# 平台判断「跑的是哪一版镜像」只能靠日志里这种带版本号的打点：
+# 之前健康检查一直 400 DisallowedHost，却无法确认容器里是旧代码还是新代码，
+# 只能靠猜；有这行就能直接对照。
+echo "[boot] 代码标记: hosts-merge-v2"
+echo "[boot] 生效 ALLOWED_HOSTS: $(python -c 'import os, django
+from config.settings import DJANGO_ENV
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings_prod" if DJANGO_ENV in {"prod", "production"} else "config.settings_dev")
+django.setup()
+from django.conf import settings
+print(",".join(settings.ALLOWED_HOSTS))' 2>/dev/null || echo '<读取失败>')"
+
 start_web() {
     # shellcheck disable=SC2086
     gunicorn config.wsgi:application $1 \

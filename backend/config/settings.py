@@ -97,6 +97,41 @@ ALLOWED_HOSTS = env_list(
 if IS_PROD and not ALLOWED_HOSTS:
     raise ImproperlyConfigured("生产环境必须通过 ALLOWED_HOSTS 指定允许访问的域名")
 
+
+def _platform_hosts() -> list[str]:
+    """PaaS 平台用的主机名：存活探针地址 + 平台分配的域名。
+
+    Railway 的存活探针固定用 ``Host: healthcheck.railway.app`` 打容器，与业务域名
+    无关；白名单里只写业务域名时，探针在中间件层就被 DisallowedHost 拦掉（日志里
+    是一串 ``Invalid HTTP_HOST header``），平台遂判定实例不健康，边缘层对外返回
+    404 / 503，而业务端口其实一直是通的。统一并进来，免得每换一个平台就回去改
+    变量——变量漏一项的代价是整条部署失败，而这里补的是平台自己的探测地址。
+    """
+    hosts = [
+        "healthcheck.railway.app",
+        "healthcheck.railway.internal",
+        "healthcheck.railway.com",
+        # 容器内探针偶尔直接用回环地址
+        "127.0.0.1",
+        "localhost",
+        "[::1]",
+    ]
+    # 平台注入的域名（Railway / Render 各自的环境变量名不同）
+    for var in (
+        "RAILWAY_PUBLIC_DOMAIN",
+        "RAILWAY_PRIVATE_DOMAIN",
+        "RENDER_EXTERNAL_HOSTNAME",
+    ):
+        value = (os.environ.get(var) or "").strip()
+        if value:
+            hosts.append(value)
+    # Django 里以点开头表示「匹配任意子域名」
+    hosts += [".up.railway.app", ".railway.app", ".onrender.com"]
+    return hosts
+
+
+ALLOWED_HOSTS = list(dict.fromkeys(list(ALLOWED_HOSTS) + _platform_hosts()))
+
 # 前端（Vite dev server / 线上域名）跨域白名单，逗号分隔
 CORS_ALLOWED_ORIGINS = env_list(
     "CORS_ALLOWED_ORIGINS",
@@ -108,6 +143,17 @@ CORS_ALLOW_METHODS = "GET,POST,PUT,PATCH,DELETE,OPTIONS"
 CORS_ALLOW_HEADERS = "Authorization,Content-Type,Accept,X-Requested-With,X-CSRFToken"
 
 CSRF_TRUSTED_ORIGINS = env_list("CSRF_TRUSTED_ORIGINS", CORS_ALLOWED_ORIGINS)
+
+# 反向代理下后台登录、绝对地址生成也要认平台域名
+_platform_origins = [
+    f"https://{host}"
+    for host in ALLOWED_HOSTS
+    if not host.startswith(".") and "." in host
+]
+_platform_origins += ["https://*.up.railway.app", "https://*.onrender.com"]
+CSRF_TRUSTED_ORIGINS = list(
+    dict.fromkeys(list(CSRF_TRUSTED_ORIGINS) + _platform_origins)
+)
 
 # ---------------------------------------------------------------------------
 # 应用

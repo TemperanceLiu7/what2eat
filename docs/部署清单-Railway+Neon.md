@@ -149,7 +149,7 @@ Booting worker with pid ...
 | 构建失败 `No module named 'psycopg'` | Builder 用了 Nixpacks + `requirements.txt` | Builder 改成 **Dockerfile** |
 | 启动即退出，`生产环境必须设置环境变量 SECRET_KEY` | 漏了 `SECRET_KEY` | 补 50 位随机串 |
 | 域名打开 404 / 502 | 域名指向的端口和应用监听的端口不一致 | Networking 里的端口与 `PORT` 变量对齐，缺省都用 8000 |
-| 400 `DisallowedHost: Invalid HTTP_HOST header: 'healthcheck.railway.app'` | Railway 存活探针固定用这个 Host 打容器，和业务域名无关；白名单只写业务域名就把它挡在外面，平台一直判定实例不健康 | 已由 `settings_prod.py` 自动并入 `healthcheck.railway.app`、`RAILWAY_PUBLIC_DOMAIN` 与 `.up.railway.app` 后缀，**无需再配变量**；旧版代码需在 `ALLOWED_HOSTS` 里补 `.up.railway.app,healthcheck.railway.app` |
+| 400 `DisallowedHost: Invalid HTTP_HOST header: 'healthcheck.railway.app'` | Railway 存活探针固定用这个 Host 打容器，和业务域名无关；白名单只写业务域名就把它挡在外面，平台一直判定实例不健康 | 已由 `backend/config/settings.py` 自动并入 `healthcheck.railway.app`、`RAILWAY_PUBLIC_DOMAIN` 与 `.up.railway.app` 后缀，**无需再配变量**；旧版代码需在 `ALLOWED_HOSTS` 里补 `.up.railway.app,healthcheck.railway.app` |
 | Deploy Logs 只有一行 `No migrations to apply.`，之后无声无息，健康检查一直失败 | Settings → Deploy 里的 **Custom Start Command** 非空，覆盖了镜像的 `ENTRYPOINT`，迁移跑完进程就退出 | 清空 Custom Start Command → Redeploy。启动链写在 `docker-entrypoint.sh`，命令行里不该再填任何东西 |
 | 接口 500 `relation "core_dish" does not exist` | 没建表 | 启动命令里必须 `migrate --no-input` |
 | `/admin/` 样式全丢 | collectstatic 没跑 | Dockerfile 里那一步不能删 |
