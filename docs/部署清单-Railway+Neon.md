@@ -126,6 +126,36 @@ Booting worker with pid ...
 
 ## 8. 前端切真接口（3 分钟）
 
+当前实际采用 **Netlify 直传**（当天 Cloudflare 控制台处于 Partially Degraded Service，且新版控制台把
+Workers & Pages 拆到了 Build → Compute，入口难找）。两条路选一条即可。
+
+### 路线 A：Netlify 直传（已采用，最快）
+
+1. 本地构建，接口地址在**构建时**固化进产物：
+
+   ```bash
+   cd what2eat
+   VITE_API_BASE="https://<你的后端域名>/api" VITE_USE_MOCK=false npx vite build
+   ```
+
+2. 把 `dist/` 打成 zip（**压缩包根目录必须直接是 `index.html`**，不能多套一层 `dist/`）
+3. 打开 <https://app.netlify.com/drop>，拖进去；未登录可先用邮箱注册，不必用 GitHub 登录
+4. 进入站点 → **总览页顶部青色的 `Make public` 按钮** → 确认
+
+> **必踩的坑**：Netlify 2026 新建站点默认 **Visitor access = Private**，只有登录该团队的人能看，
+> 匿名访问 `/`、`/index.html`、`/assets/` 全部 401，响应头指向 `app.netlify.com/edge-access`。
+> 开关**不在**团队 Settings，也**不在** Project configuration 里，就是总览页那个 `Make public` 按钮。
+> 下面那张「Protect and secure access / Upgrade to protect」是 Pro 套餐的密码保护推销卡，不要点。
+>
+> **验收必须用匿名 curl**，你浏览器里能打开不算数——你的会话带着团队登录态，天然能过这道门：
+>
+> ```bash
+> curl -s -o /dev/null -w "%{http_code}\n" https://<站点>.netlify.app/
+> # 要 200；再测一个深链接，验证 SPA 回退：/eat 也要 200
+> ```
+
+### 路线 B：Cloudflare Pages（push 自动构建）
+
 1. Cloudflare → **Workers & Pages** → 你的项目 → **Settings** → **Environment variables** → **Production**
 2. 两条：
 
@@ -135,7 +165,12 @@ Booting worker with pid ...
    | `VITE_USE_MOCK` | `false`（必须正好是 `false`） |
 
 3. **Deployments** → 最新一条右侧 `...` → **Retry deployment**（Vite 变量构建时注入，不重建不生效）
-4. 打开 <https://what2eattt.pages.dev> 硬刷新
+
+### 跨域（两条路线都要做一次）
+
+后端必须放行前端域名，否则浏览器收到 204 预检但**一个 `access-control-*` 头都没有**，请求直接被拦。
+后端已内置正则，`.netlify.app` / `.pages.dev` / `.vercel.app` 三类平台域名自动放行，换站点不用改代码；
+自定义域名仍需把 `CORS_ALLOWED_ORIGINS` 设成 `https://<域名>`（精确匹配、不带尾斜杠）。
 
 **验收**：F12 → Network 能看到 `/api/health/`、`/api/dishes/random/` 的 200；抽到的菜与 `/admin/core/dish/` 一致；
 **换手机/换浏览器再抽，收藏和打卡还在** ← 这条才证明真进库了。
@@ -154,7 +189,8 @@ Booting worker with pid ...
 | Deploy Logs 只有一行 `No migrations to apply.`，之后无声无息，健康检查一直失败 | Settings → Deploy 里的 **Custom Start Command** 非空，覆盖了镜像的 `ENTRYPOINT`，迁移跑完进程就退出 | 清空 Custom Start Command → Redeploy。启动链写在 `docker-entrypoint.sh`，命令行里不该再填任何东西 |
 | 接口 500 `relation "core_dish" does not exist` | 没建表 | 启动命令里必须 `migrate --no-input` |
 | `/admin/` 样式全丢 | collectstatic 没跑 | Dockerfile 里那一步不能删 |
-| 前端报 CORS | ORIGINS 与实际域名不一致 | 精确到 `https://xxx.pages.dev`，无尾斜杠 |
+| 前端报 CORS，预检 204 但没有任何 `access-control-*` 头 | `CorsMiddleware` 只做精确匹配，前端换域名后 Origin 不在白名单 | 已内置正则，`.netlify.app` / `.pages.dev` / `.vercel.app` 自动放行；自定义域名把 `CORS_ALLOWED_ORIGINS` 设成 `https://<域名>`（无尾斜杠） |
+| 站点能自己打开，别人打开是 Netlify 登录页 / 401 | 新建站点默认 **Visitor access = Private** | 项目总览页顶部点青色 `Make public`，立即生效，不用重新部署；验收必须用匿名 curl |
 | 接口很慢（>1s） | 应用与数据库跨区 | Region 选 **US East (Virginia)**，与 Neon 同区 |
 | 试用额度用光 | 服务常驻不休眠 | 开 App Sleeping；或升级 Hobby $5/月 |
 
@@ -162,5 +198,11 @@ Booting worker with pid ...
 
 ## 10. 一句话总结
 
-> 换平台只是换了「跑在哪台机器上」：`DATABASE_URL` 指到 Neon，容器里 `migrate + bootstrap + gunicorn`，
+> 换平台只是换了「跑在哪台机器上」：`DATABASE_URL` 指到数据库，容器里 `migrate + bootstrap + gunicorn`，
 > `/api/health/` 一返回 `database: up` 就算通，前端把 `VITE_API_BASE` 指过去即可。
+
+本次实际落地（2026-11-17）：
+
+- 前端 <https://celebrated-jalebi-812a02.netlify.app>（Netlify 直传 `dist`）
+- 后端 <https://what2eat-api-production.up.railway.app>（Railway Docker + gunicorn）
+- 数据库 Railway PostgreSQL，容器启动自动迁移 + 种子（6 档口 / 16 菜）

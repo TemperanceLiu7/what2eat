@@ -1,16 +1,22 @@
 # 校园「今天吃什么」· 同址多端演示版
 
-一个**网址**，同时给电脑和手机用：宽屏进来是 Element Plus 的桌面布局（顶部导航 + 左右分栏），窄屏或手机进来是 Vant 的移动布局（底部 TabBar + 单列卡片）。后端接口用本地模拟数据顶替，不需要启动 Django 就能完整演示。
+一个**网址**，同时给电脑和手机用：宽屏进来是 Element Plus 的桌面布局（顶部导航 + 左右分栏），窄屏或手机进来是 Vant 的移动布局（底部 TabBar + 单列卡片）。线上版本已接真实后端（Django + PostgreSQL）；本地开发时把 `VITE_USE_MOCK` 打开即可用模拟数据完整演示，不需要启动 Django。
 
 ## 线上地址
 
-# <https://what2eatt.pages.dev>
+**前端**：<https://celebrated-jalebi-812a02.netlify.app>
 
-<img src="docs/qrcode.png" alt="扫码打开" width="180" />
+**后端 API**：<https://what2eat-api-production.up.railway.app/api>
 
-部署在 Cloudflare Pages：GitHub 仓库 `Ares5807/what2eat`，push 到 `main` 自动构建发布。
+- 健康检查 <https://what2eat-api-production.up.railway.app/api/health/>
+- 接口文档 <https://what2eat-api-production.up.railway.app/api/docs/>
+- 后台管理 <https://what2eat-api-production.up.railway.app/admin/>
 
-> 注：国内访问 `pages.dev` 偶尔会 DNS 抽风（打不开），换手机流量或等一会儿重试即可。
+线上版本走**真实后端**（构建时 `VITE_USE_MOCK=false`），数据来自 Railway 上的 PostgreSQL，种子数据 6 个档口 / 16 道菜。
+
+部署形态：前端 Netlify 静态托管，后端 Railway（Django + gunicorn + PostgreSQL）。代码同时推送到 `Ares5807/what2eat` 与 `TemperanceLiu7/what2eat`，两个仓库内容一致。
+
+> 原 `what2eatt.pages.dev` 的 Cloudflare Pages 站点已停用；`docs/qrcode.png` 里的二维码仍指向旧地址，需要按新域名重新生成。
 
 ## 本地地址
 
@@ -297,9 +303,9 @@ what2eat/
 
 页面不直接碰 HTTP，全部经过 `src/api/`（mock 与真接口二选一，见上文「登录与前后端联调」）。
 
-- **前端部署**：Cloudflare Pages，push 自动构建（见下一节）
-- **后端部署**：由组内同学负责，**不绑定平台**。代码已支持 SQLite / MySQL / PostgreSQL 三种库、
-  gunicorn 启动、WhiteNoise 发静态文件，环境变量与启动命令写在
+- **前端部署**：Netlify 静态托管（当前），Cloudflare Pages 为历史方案（见下文部署章节）
+- **后端部署**：Railway（Docker + gunicorn + PostgreSQL），代码本身不绑定平台，也支持 SQLite / MySQL、
+  WhiteNoise 发静态文件，环境变量与启动命令写在
   [backend/README.md](backend/README.md) 第八节。
 
 切到真后端只需要前端两个环境变量：
@@ -314,7 +320,31 @@ VITE_USE_MOCK=false
 1. **HTTP 下手机的部分能力不可用**。`capture` 拍照、摇一摇的 `DeviceMotionEvent`、PWA 安装都要求 HTTPS（安全上下文）。局域网 `http://` 地址只能演示界面和按钮流程。Cloudflare Pages 和绝大多数云平台默认给 HTTPS，所以线上不受影响。
 2. **演示模式（mock）的数据存在浏览器 localStorage**，换设备/清缓存就没了；切到真后端后数据在服务器数据库里。图片压到 900px 是为了不撑爆 localStorage 的 5MB 配额。
 
-## 部署到 Cloudflare Pages（改本地 → push → 网址自动更新）
+## 当前实际部署（2026-11）
+
+> 下面 Cloudflare Pages 那一节是**历史方案**，当前线上不是这样部署的，保留作参考。
+
+实际形态：
+
+| 部分 | 平台 | 说明 |
+| --- | --- | --- |
+| 前端 | **Netlify**（直传 `dist` 静态包） | `celebrated-jalebi-812a02.netlify.app` |
+| 后端 | **Railway**（Docker + gunicorn） | `what2eat-api-production.up.railway.app` |
+| 数据库 | **Railway PostgreSQL** | 容器启动时自动 `migrate` + `bootstrap` 种子数据 |
+
+前端构建命令（本地或 CI 一致）：
+
+```bash
+VITE_API_BASE=https://what2eat-api-production.up.railway.app/api \
+VITE_USE_MOCK=false \
+npx vite build
+```
+
+把 `dist/` 打包后拖到 <https://app.netlify.com/drop> 即可更新。**直传包不会自动重建**，前端改动后需要重新打包上传。
+
+Railway 侧的环境变量、启动命令与踩坑记录见 [docs/部署清单-Railway+Neon.md](docs/部署清单-Railway+Neon.md)。
+
+## 部署到 Cloudflare Pages（历史方案，push 自动更新）
 
 纯静态站点，**不需要租服务器**，也不需要买域名。网址形如 `https://<项目名>.pages.dev`。
 
