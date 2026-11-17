@@ -16,9 +16,14 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-# 先只拷依赖清单，改代码时不必重装依赖（利用镜像层缓存）
-COPY backend/requirements-cloud.txt /app/requirements.txt
-RUN pip install --no-cache-dir -r /app/requirements.txt
+# 先只拷依赖清单，改代码时不必重装依赖（利用镜像层缓存）。
+# 注意：requirements-cloud.txt 里用 `-r requirements.txt` 相对引用基础清单，
+# 两份必须放在同一目录且保持原名；若把 cloud 清单改名为 requirements.txt，
+# pip 会判定为「递归引用自身」直接报错。
+COPY backend/requirements.txt /tmp/req/requirements.txt
+COPY backend/requirements-cloud.txt /tmp/req/requirements-cloud.txt
+RUN pip install --no-cache-dir -r /tmp/req/requirements-cloud.txt \
+    && rm -rf /tmp/req
 
 COPY backend/ /app/
 
