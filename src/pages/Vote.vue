@@ -141,7 +141,6 @@ async function review(v) {
     </section>
 
     <div v-if="!ui.votes.length" class="card empty">
-      <span class="emoji">🗳️</span>
       还没有投票，发起第一个吧
     </div>
 
@@ -157,7 +156,7 @@ async function review(v) {
 
         <p v-if="v.reviewOf" class="review-from">由投票 #{{ v.reviewOf }} 复审而来，参与人数扩大到 {{ v.targetCount }} 人</p>
 
-        <p v-if="v.target" class="vote-target">🎯 {{ v.target }}</p>
+        <p v-if="v.target" class="vote-target">{{ v.target }}</p>
 
         <UProgress :percentage="pct(v)" />
 
@@ -215,12 +214,11 @@ async function review(v) {
   width: 100%;
   padding: 14px;
   border: 1px dashed var(--brand-line);
-  border-radius: 12px;
-  background: var(--brand-soft);
+  border-radius: var(--radius-md);
+  background: var(--surface-warm);
   color: var(--brand);
-  font-family: var(--font-hand);
-  font-size: 15px;
-  font-weight: 700;
+  font-size: 14px;
+  font-weight: 600;
 }
 
 .create-toggle:hover {
@@ -274,9 +272,9 @@ async function review(v) {
   display: inline-flex;
   align-items: center;
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   overflow: hidden;
-  background: var(--cream);
+  background: #fff;
 }
 
 .stepper button {
@@ -314,7 +312,6 @@ async function review(v) {
 }
 
 .vote-head h3 {
-  font-family: var(--font-hand);
   font-size: 16px;
   line-height: 1.4;
 }
@@ -323,7 +320,7 @@ async function review(v) {
   flex-shrink: 0;
   font-size: 11px;
   padding: 3px 9px;
-  border-radius: 999px;
+  border-radius: var(--radius-sm);
   background: var(--surface-soft);
   color: var(--muted);
   white-space: nowrap;
@@ -334,12 +331,12 @@ async function review(v) {
   color: var(--brand);
 }
 .badge.passed {
-  background: #e6efd9;
-  color: #5f8a4e;
+  background: var(--surface-soft);
+  color: var(--brand-2-deep);
 }
 .badge.rejected {
-  background: #f7e3dc;
-  color: #b0563f;
+  background: var(--brand-soft);
+  color: var(--brand);
 }
 
 .vote-target {
@@ -365,12 +362,12 @@ async function review(v) {
 }
 
 .vote-nums .agree {
-  color: #5f8a4e;
+  color: var(--brand-2-deep);
   font-weight: 600;
 }
 
 .vote-nums .disagree {
-  color: #b0563f;
+  color: var(--brand);
   font-weight: 600;
 }
 
@@ -413,9 +410,9 @@ async function review(v) {
   font-weight: 600;
   padding: 1px 6px;
   margin-right: 6px;
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   background: var(--surface-soft);
-  color: var(--kraft-deep);
+  color: var(--ink-soft);
   vertical-align: 2px;
 }
 
@@ -424,7 +421,7 @@ async function review(v) {
   font-size: 12px;
   color: var(--ink-soft);
   background: var(--surface-soft);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   padding: 6px 10px;
 }
 </style>

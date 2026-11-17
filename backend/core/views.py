@@ -23,6 +23,7 @@ from django.db.models import F, Q, Value
 from django.db.models.functions import Greatest
 from django.utils import timezone
 from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 from rest_framework_simplejwt.serializers import TokenRefreshSerializer as JWTRefreshSerializer
@@ -1179,4 +1180,52 @@ class PreferencesView(APIView):
                 ],
                 "topSources": [{"name": n, "count": c} for n, c in sources.most_common(5)],
             }
+        )
+
+
+class HealthView(APIView):
+    """GET /api/health/ —— 存活 + 数据库连通性探针（Render 健康检查用）。
+
+    不查业务表，只做 ``SELECT 1``：数据库刚建好、还没 migrate 时返回 503，
+    前端与监控都能立刻看出来是「库没通」而不是「服务没起来」。
+    """
+
+    authentication_classes = []
+    permission_classes = [AllowAny]
+
+    @extend_schema(
+        tags=["运维"],
+        summary="健康检查（含数据库连通性）",
+        responses={200: ENVELOPE, 503: FAIL_ENVELOPE},
+    )
+    def get(self, request):
+        from django.db import connection
+
+        db_ok, db_error = True, ""
+        try:
+            with connection.cursor() as cur:
+                cur.execute("SELECT 1")
+                cur.fetchone()
+        except Exception as exc:  # noqa: BLE001 - 探针要吞掉一切异常并如实上报
+            db_ok, db_error = False, f"{type(exc).__name__}: {exc}"
+
+        if not db_ok:
+            return Response(
+                {
+                    "ok": False,
+                    "code": "DB_UNAVAILABLE",
+                    "message": "数据库连接失败",
+                    "data": {"service": "what2eat-api", "database": "down", "detail": db_error},
+                },
+                status=503,
+            )
+
+        return ok(
+            {
+                "service": "what2eat-api",
+                "database": "up",
+                "dishes": Dish.objects.count(),
+                "shops": Shop.objects.count(),
+            },
+            "ok",
         )

@@ -133,16 +133,15 @@ async function submit() {
   align-items: center;
   justify-content: center;
   padding: 20px;
-  backdrop-filter: blur(2px);
 }
 
 .dialog {
   width: min(460px, 100%);
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 18px;
+  border-radius: var(--radius-lg);
   padding: 20px;
-  box-shadow: 0 24px 60px rgba(84, 56, 42, 0.28);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.24);
 }
 
 .head {
@@ -174,7 +173,7 @@ async function submit() {
   color: var(--ink-soft);
   background: var(--surface-soft);
   border-left: 3px solid var(--brand-line);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   padding: 8px 10px;
   margin-bottom: 10px;
   display: -webkit-box;
@@ -200,8 +199,7 @@ async function submit() {
 .detail {
   width: 100%;
   border: 1px solid var(--line);
-  border-radius: 10px;
-  background: var(--cream);
+  border-radius: var(--radius-md);
   padding: 10px 12px;
   font: inherit;
   font-size: 13px;
@@ -247,7 +245,7 @@ async function submit() {
   }
   .dialog {
     width: 100%;
-    border-radius: 18px 18px 0 0;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
     padding: 18px 16px calc(18px + env(safe-area-inset-bottom));
   }
 }

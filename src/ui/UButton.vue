@@ -56,4 +56,24 @@ const elSize = computed(() =>
 .u-btn--text {
   padding: 0 4px;
 }
+
+/*
+ * 按钮统一成"印刷品"质感：方角、无投影、字重不过粗、按下只变色不缩放。
+ * 两个组件库各覆盖一次，保证同一按钮在 PC / 手机上一模一样。
+ */
+.u-btn {
+  font-family: var(--font-sans);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  border-radius: var(--radius-sm);
+  box-shadow: none;
+  transition:
+    background-color var(--dur-fast) var(--ease-out),
+    border-color var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out);
+}
+
+.u-btn:active {
+  transform: none;
+}
 </style>

@@ -1,0 +1,14 @@
+# Render / Railway 等 PaaS 部署专用依赖
+# 只装 PostgreSQL 驱动，避免 mysqlclient 在无 MySQL 头文件的云环境编译失败
+# 安装：pip install -r requirements-cloud.txt
+
+-r requirements.txt
+
+# PostgreSQL 驱动（预编译 wheel，无需系统依赖）
+psycopg[binary]>=3.2
+
+# WSGI 服务器
+gunicorn>=22.0
+
+# 静态文件（admin 的 CSS/JS），无需 Nginx
+whitenoise>=6.7

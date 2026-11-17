@@ -86,7 +86,7 @@ async function submit() {
       if (res.code === 'UNVERIFIED') router.push('/login')
       return
     }
-    toast('打卡成功 🎉')
+    toast('打卡成功')
     content.value = ''
     image.value = ''
     dishName.value = ''
@@ -116,7 +116,7 @@ async function submit() {
           <input type="file" accept="image/*" capture="environment" hidden @change="onFile" />
           <img v-if="image" :src="image" alt="打卡照片" />
           <span v-else class="picker-inner">
-            <span class="picker-icon">📷</span>
+            <svg class="picker-icon" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8.5A1.5 1.5 0 0 1 5.5 7h2.1l1.3-2h6.2l1.3 2h2.1A1.5 1.5 0 0 1 20 8.5V18a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 18z" /><circle cx="12" cy="12.8" r="3.2" /></svg>
             <span class="picker-text">拍照 / 选图</span>
           </span>
         </label>
@@ -135,7 +135,7 @@ async function submit() {
           :class="{ active: dishName === d.name }"
           @click="dishName = dishName === d.name ? '' : d.name"
         >
-          {{ d.emoji }} {{ d.name }}
+          {{ d.name }}
         </button>
       </div>
 
@@ -154,7 +154,6 @@ async function submit() {
       </div>
 
       <div v-if="!ui.checkins.length" class="card empty">
-        <span class="emoji">🥢</span>
         还没有打卡记录，发第一条吧
       </div>
 
@@ -167,7 +166,7 @@ async function submit() {
           </div>
           <p class="c-text">{{ c.content }}</p>
           <div class="c-foot">
-            <span v-if="c.dishName" class="dish-tag">🍽️ {{ c.dishName }}</span>
+            <span v-if="c.dishName" class="dish-tag">{{ c.dishName }}</span>
             <button
               v-if="usingMock || (c.userId && c.userId !== ui.user?.id)"
               class="report-link"
@@ -207,7 +206,7 @@ async function submit() {
   justify-content: center;
   width: 200px;
   height: 148px;
-  border-radius: 14px;
+  border-radius: var(--radius-md);
   border: 1px dashed var(--brand-line);
   background: var(--surface-warm);
   overflow: hidden;
@@ -280,7 +279,7 @@ async function submit() {
   width: 132px;
   height: 132px;
   object-fit: cover;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   flex-shrink: 0;
 }
 
@@ -297,8 +296,7 @@ async function submit() {
 }
 
 .who {
-  font-family: var(--font-hand);
-  font-weight: 700;
+  font-weight: 600;
   font-size: 14px;
 }
 
@@ -319,7 +317,7 @@ async function submit() {
   margin-top: 10px;
   font-size: 12px;
   padding: 4px 10px;
-  border-radius: 999px;
+  border-radius: var(--radius-sm);
   background: var(--brand-soft);
   color: var(--brand);
 }
@@ -347,7 +345,7 @@ async function submit() {
 }
 
 .report-link:hover {
-  color: var(--brand-strong);
+  color: var(--brand);
   text-decoration: underline;
 }
 

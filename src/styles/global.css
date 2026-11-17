@@ -15,6 +15,10 @@
   --font-body: 'ChillRoundF', 'Resource Han Rounded CN', 'PingFang SC', 'Hiragino Sans GB',
     'Microsoft YaHei', sans-serif;
   --font-hand: 'LXGW Marker Gothic', 'ChillRoundF', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --font-serif: Georgia, 'Songti SC', 'STSong', 'Noto Serif CJK SC', 'SimSun', serif;
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB',
+    'Microsoft YaHei', sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, 'Courier New', monospace;
 
   /* ---------- 1. 品牌色（暖棕橘，配豆绿纸底） ---------- */
   --brand: #b5673f; /* 主色：烤棕橘，CTA / 强调 */
@@ -308,6 +312,12 @@ p {
 button {
   font-family: inherit;
   cursor: pointer;
+}
+
+/* 数字（价格 / 热度 / 排名 / 计数）统一等宽 */
+.num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
 }
 
 /* ---------- 通用布局 ---------- */

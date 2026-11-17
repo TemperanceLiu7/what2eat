@@ -26,21 +26,18 @@ onMounted(async () => {
 const entries = [
   {
     to: '/draw',
-    emoji: '🎲',
     title: '摇一摇',
     desc: '不知道吃什么？随机一个',
     tone: 'brand',
   },
   {
     to: '/eat',
-    emoji: '🍱',
     title: '今天吃了啥',
     desc: '拍照识别，记一笔口味',
     tone: 'warm',
   },
   {
     to: '/me',
-    emoji: '⭐',
     title: '我的收藏',
     desc: '常吃的都在这里',
     tone: 'soft',
@@ -53,7 +50,7 @@ const entries = [
     <section class="head">
       <p class="kicker">个人板块</p>
       <h1>{{ isLoggedIn ? (ui.user?.name || ui.user?.username || '同学') + '，吃点什么？' : '吃点什么？' }}</h1>
-      <p class="sub">你自己的口味、记录和收藏都在这里，不需要进社区也能用。</p>
+      <p class="sub">口味、记录与收藏。不加入社区也可以正常使用。</p>
     </section>
 
     <!-- 未登录提示 -->
@@ -74,7 +71,6 @@ const entries = [
         class="entry card"
         :class="e.tone"
       >
-        <span class="entry-emoji">{{ e.emoji }}</span>
         <span class="entry-body">
           <span class="entry-title">{{ e.title }}</span>
           <span class="entry-desc">{{ e.desc }}</span>
@@ -114,7 +110,7 @@ const entries = [
         </div>
       </div>
       <div v-else class="empty-pref">
-        还没有记录。点上面的「今天吃了啥」拍一张，这里就会慢慢长出你的口味。
+        还没有记录。去「今天吃了啥」记一笔，这里会逐步积累你的口味。
       </div>
     </section>
 
@@ -127,7 +123,6 @@ const entries = [
 
       <div v-if="loading" class="card empty">加载中…</div>
       <div v-else-if="!mine.length" class="card empty">
-        <span class="emoji">🍚</span>
         还没有记录，去「今天吃了啥」拍一张
       </div>
 
@@ -136,7 +131,7 @@ const entries = [
         <div class="item-body">
           <div class="item-head">
             <span class="name">{{ c.dishName || c.content }}</span>
-            <span v-if="c.visibility === 'private'" class="lock">🔒 仅自己</span>
+            <span v-if="c.visibility === 'private'" class="lock">仅自己</span>
           </div>
           <p class="muted">{{ c.who }} · {{ fmtTime(c.at) }}</p>
           <p v-if="c.content && c.dishName" class="text">{{ c.content }}</p>
@@ -152,13 +147,11 @@ const entries = [
 }
 
 .kicker {
-  display: inline-flex;
-  font-family: var(--font-hand);
-  font-size: 13px;
-  letter-spacing: 0.08em;
-  color: var(--brand);
-  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  color: var(--muted);
   margin-bottom: 8px;
+  text-transform: uppercase;
 }
 
 h1 {
@@ -172,7 +165,6 @@ h1 {
 }
 
 .notice {
-  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -217,46 +209,19 @@ h1 {
 }
 
 .entry {
-  position: relative;
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 16px 14px 14px;
-  transition: transform 0.18s ease, box-shadow 0.18s ease;
-}
-
-/* 纸条顶部一小段和纸胶带 */
-.entry::before {
-  content: '';
-  position: absolute;
-  top: -7px;
-  left: 22px;
-  width: 52px;
-  height: 13px;
-  transform: rotate(-3deg);
-  background: rgba(233, 180, 76, 0.5);
-  border-left: 1px dashed rgba(255, 255, 255, 0.5);
-  border-right: 1px dashed rgba(255, 255, 255, 0.5);
-  border-radius: 2px;
-}
-
-.entry:nth-child(odd) {
-  transform: rotate(-1deg);
-}
-
-.entry:nth-child(even) {
-  transform: rotate(0.9deg);
+  padding: 14px;
+  transition: border-color var(--dur-fast) var(--ease-out);
 }
 
 .entry:hover {
-  transform: rotate(0deg) translateY(-2px);
-  box-shadow: var(--shadow);
+  border-color: var(--ink-quiet);
 }
 
 .entry-emoji {
   font-size: 24px;
-  filter: drop-shadow(0 3px 3px rgba(84, 56, 42, 0.25));
-  transform: rotate(-5deg);
 }
 
 .entry-body {
@@ -266,9 +231,8 @@ h1 {
 }
 
 .entry-title {
-  font-family: var(--font-hand);
-  font-size: 15px;
-  font-weight: 700;
+  font-size: 14px;
+  font-weight: 600;
 }
 
 .entry-desc {
@@ -307,14 +271,13 @@ h1 {
 
 .stat {
   background: var(--surface-soft);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   padding: 10px;
   text-align: center;
 }
 
 .stat .value {
   display: block;
-  font-family: var(--font-hand);
   font-size: 20px;
   font-weight: 700;
 }
@@ -332,7 +295,7 @@ h1 {
   display: inline-block;
   font-size: 12px;
   padding: 4px 10px;
-  border-radius: 999px;
+  border-radius: var(--radius-sm);
   background: var(--brand-soft);
   color: var(--brand);
 }
@@ -364,7 +327,7 @@ h1 {
 .thumb {
   width: 76px;
   height: 76px;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   object-fit: cover;
   flex-shrink: 0;
 }

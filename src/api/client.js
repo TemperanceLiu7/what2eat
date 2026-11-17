@@ -8,7 +8,8 @@ import { ERROR_MESSAGES, codeOfStatus } from './errors'
  */
 
 const TOKEN_KEY = 'what2eat:token'
-const DEFAULT_TIMEOUT = 10 * 1000
+// 免费托管（Render Free）会休眠，首个请求要等实例冷启动，10s 容易直接超时
+const DEFAULT_TIMEOUT = 20 * 1000
 
 // 取一层 env 兜底：正常在 Vite 里跑一定有值，脱离 Vite（比如单测）时也不会在 import 阶段炸掉
 const env = import.meta.env || {}
@@ -146,6 +147,20 @@ async function request(path, options = {}) {
     throw new ApiError(ERROR_MESSAGES.NETWORK, { code: 'NETWORK' })
   } finally {
     clearTimeout(timer)
+  }
+}
+
+/**
+ * 预热：真接口模式下页面一打开就悄悄打一次 /health/。
+ * 免费托管 15 分钟无流量会休眠，冷启动约 30 秒——提前叫醒，
+ * 等用户真正点「抽一道」时实例已经起来了。
+ */
+export function warmup() {
+  if (typeof fetch !== 'function') return
+  try {
+    fetch(buildUrl('/health/'), { method: 'GET', cache: 'no-store' }).catch(() => {})
+  } catch {
+    /* 预热失败无所谓，正式请求会给出提示 */
   }
 }
 

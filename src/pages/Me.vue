@@ -27,10 +27,10 @@ const name = ref('')
 const college = ref('')
 
 const stats = computed(() => [
-  { label: '打卡', value: ui.checkins.length, emoji: '📸' },
-  { label: '收藏', value: Object.keys(ui.favorites).length, emoji: '⭐' },
-  { label: '点赞', value: Object.keys(ui.likes).length, emoji: '❤️' },
-  { label: '投票', value: ui.votes.length, emoji: '🗳️' },
+  { label: '打卡', value: ui.checkins.length },
+  { label: '收藏', value: Object.keys(ui.favorites).length },
+  { label: '点赞', value: Object.keys(ui.likes).length },
+  { label: '投票', value: ui.votes.length },
 ])
 
 const favs = computed(() => ui.favoriteList || [])
@@ -142,12 +142,12 @@ function resetAll() {
 
     <section v-else class="card verified-card">
       <div class="v-row">
-        <span class="v-badge">✅ 已认证学生</span>
+        <span class="v-badge">已认证学生</span>
         <span class="v-id">{{ ui.user?.studentId }}</span>
       </div>
       <p class="v-name">{{ ui.user?.name }} · {{ ui.user?.college }}</p>
       <p v-if="isMuted" class="muted-warn">
-        ⚠️ 账号已被{{ ui.user?.banned ? '封禁' : '禁言' }}<span v-if="mutedUntilText">，解禁时间 {{ mutedUntilText }}</span>
+        注意：账号已被{{ ui.user?.banned ? '封禁' : '禁言' }}<span v-if="mutedUntilText">，解禁时间 {{ mutedUntilText }}</span>
         ，期间无法发布内容。
       </p>
       <p v-else-if="ui.user?.reportCount" class="muted-warn soft">
@@ -159,7 +159,6 @@ function resetAll() {
     <!-- 数据统计 -->
     <section class="stats">
       <div v-for="s in stats" :key="s.label" class="stat">
-        <span class="stat-emoji">{{ s.emoji }}</span>
         <span class="stat-value">{{ s.value }}</span>
         <span class="stat-label">{{ s.label }}</span>
       </div>
@@ -177,7 +176,6 @@ function resetAll() {
       </div>
 
       <div v-if="!favs.length" class="card empty">
-        <span class="emoji">⭐</span>
         在「随机推荐」里收藏喜欢的菜，会出现在这里
       </div>
 
@@ -264,8 +262,9 @@ function resetAll() {
 
 .verified-card {
   margin-bottom: 18px;
-  background: linear-gradient(135deg, #e6efd9, var(--surface));
-  border: 1px solid #cfe0bd;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-left: 2px solid var(--brand-2);
 }
 
 .v-row {
@@ -277,10 +276,9 @@ function resetAll() {
 }
 
 .v-badge {
-  font-family: var(--font-hand);
   font-size: 15px;
   font-weight: 700;
-  color: #5f8a4e;
+  color: var(--brand-2-deep);
 }
 
 .v-id {
@@ -297,16 +295,16 @@ function resetAll() {
 .muted-warn {
   font-size: 13px;
   line-height: 1.6;
-  color: #a8433f;
-  background: #fbeee9;
-  border-radius: 8px;
+  color: var(--brand);
+  background: var(--brand-soft);
+  border-radius: var(--radius-md);
   padding: 8px 10px;
   margin-bottom: 10px;
 }
 
 .muted-warn.soft {
   color: var(--brand-2-deep);
-  background: #fbf1d8;
+  background: var(--surface-soft);
 }
 
 .stats {
@@ -317,9 +315,8 @@ function resetAll() {
 }
 
 .stat {
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 14px;
+  background: #fff;
+  border-radius: var(--radius-md);
   box-shadow: var(--shadow-sm);
   padding: 14px 10px;
   display: flex;
@@ -333,7 +330,6 @@ function resetAll() {
 }
 
 .stat-value {
-  font-family: var(--font-hand);
   font-size: 20px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
@@ -375,16 +371,15 @@ function resetAll() {
 }
 
 .fav-name {
-  font-family: var(--font-hand);
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 600;
   margin-bottom: 2px;
 }
 
 .fav-remove {
   border: 1px solid var(--line);
-  background: var(--cream);
-  border-radius: 8px;
+  background: #fff;
+  border-radius: var(--radius-md);
   padding: 5px 10px;
   font-size: 12px;
   color: var(--muted);
@@ -425,15 +420,15 @@ function resetAll() {
 .reset {
   width: 100%;
   padding: 12px;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   border: 1px solid var(--line);
-  background: var(--cream);
+  background: #fff;
   color: var(--muted);
   font-size: 13px;
 }
 
 .reset:hover {
-  color: var(--brand-strong);
+  color: var(--brand);
   border-color: var(--brand-line);
 }
 

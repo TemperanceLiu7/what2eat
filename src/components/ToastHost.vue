@@ -27,13 +27,13 @@ import { toastList } from '@/composables/useToast'
 }
 
 .toast-item {
-  background: rgba(111, 68, 48, 0.94);
-  color: var(--cream);
+  background: rgba(31, 35, 41, 0.9);
+  color: #fff;
   font-size: 14px;
   line-height: 1.4;
   padding: 10px 16px;
-  border-radius: 999px;
-  box-shadow: 0 8px 24px rgba(84, 56, 42, 0.25);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
   text-align: center;
 }
 

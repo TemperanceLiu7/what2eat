@@ -5,7 +5,10 @@ import { isLoggedIn, isVerified } from '@/stores/app'
 <template>
   <div class="shell mobile">
     <header class="m-header">
-      <router-link to="/" class="m-brand">🍜 今天吃什么</router-link>
+      <router-link to="/" class="m-brand">
+        <span class="m-mark">吃</span>
+        <span>今天吃什么</span>
+      </router-link>
       <router-link :to="isLoggedIn ? '/me' : '/login'" class="m-user">
         <van-tag v-if="isVerified" type="success" round>已认证</van-tag>
         <van-tag v-else-if="isLoggedIn" round color="var(--brand-soft)" text-color="var(--brand)">未核验</van-tag>
@@ -17,7 +20,14 @@ import { isLoggedIn, isVerified } from '@/stores/app'
       <router-view />
     </main>
 
-    <van-tabbar route :border="false" active-color="var(--brand-strong)" inactive-color="var(--muted)" safe-area-inset-bottom>
+    <van-tabbar
+      route
+      :border="false"
+      active-color="var(--brand-strong)"
+      inactive-color="var(--muted)"
+      safe-area-inset-bottom
+      class="m-tabbar"
+    >
       <van-tabbar-item replace to="/personal" icon="home-o">个人</van-tabbar-item>
       <van-tabbar-item replace to="/community" icon="friends-o">社区</van-tabbar-item>
       <van-tabbar-item replace to="/me" icon="user-o">我的</van-tabbar-item>
@@ -34,7 +44,7 @@ import { isLoggedIn, isVerified } from '@/stores/app'
   position: sticky;
   top: 0;
   z-index: 100;
-  height: 52px;
+  height: 48px;
   padding: 0 14px;
   display: flex;
   align-items: center;
@@ -46,10 +56,25 @@ import { isLoggedIn, isVerified } from '@/stores/app'
 }
 
 .m-brand {
-  font-family: var(--font-hand);
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--kraft-deep);
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--font-serif);
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.m-mark {
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--brand);
+  color: #fff;
+  border-radius: 2px;
+  font-size: 12px;
+  line-height: 1;
 }
 
 .m-user {
@@ -61,14 +86,11 @@ import { isLoggedIn, isVerified } from '@/stores/app'
   padding-bottom: 64px;
 }
 
-/* 底部 tabbar 米白纸条感 */
-:deep(.van-tabbar) {
-  background: var(--cream);
-  box-shadow: 0 -4px 16px rgba(84, 56, 42, 0.12);
+.m-tabbar {
+  border-top: 1px solid var(--line);
 }
 
-:deep(.van-tabbar-item__text) {
-  font-family: var(--font-hand);
-  font-size: 12px;
+.m-tabbar :deep(.van-tabbar-item__text) {
+  font-size: 11px;
 }
 </style>

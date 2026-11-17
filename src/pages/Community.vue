@@ -22,14 +22,12 @@ onMounted(async () => {
 const entries = [
   {
     to: '/checkin',
-    emoji: '📸',
     title: '打卡广场',
     desc: '看看同学们今天吃什么',
     tone: 'brand',
   },
   {
     to: '/vote',
-    emoji: '🗳️',
     title: '投票广场',
     desc: '吃不吃？让大家投',
     tone: 'warm',
@@ -47,7 +45,6 @@ const entries = [
 
     <section class="entries">
       <router-link v-for="e in entries" :key="e.to" :to="e.to" class="entry card" :class="e.tone">
-        <span class="entry-emoji">{{ e.emoji }}</span>
         <span class="entry-body">
           <span class="entry-title">{{ e.title }}</span>
           <span class="entry-desc">{{ e.desc }}</span>
@@ -64,7 +61,6 @@ const entries = [
 
       <div v-if="loading" class="card empty">加载中…</div>
       <div v-else-if="!latest.length" class="card empty">
-        <span class="emoji">🥢</span>
         还没有人公开发布，你可以去当第一个
       </div>
 
@@ -76,7 +72,7 @@ const entries = [
             <span class="muted">{{ fmtTime(c.at) }}</span>
           </div>
           <p class="text">{{ c.content }}</p>
-          <span v-if="c.dishName" class="tag">🍽️ {{ c.dishName }}</span>
+          <span v-if="c.dishName" class="tag">{{ c.dishName }}</span>
         </div>
       </article>
     </section>
@@ -89,13 +85,11 @@ const entries = [
 }
 
 .kicker {
-  display: inline-flex;
-  font-family: var(--font-hand);
-  font-size: 13px;
-  letter-spacing: 0.08em;
-  color: var(--brand);
-  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  color: var(--muted);
   margin-bottom: 8px;
+  text-transform: uppercase;
 }
 
 h1 {
@@ -116,12 +110,11 @@ h1 {
 }
 
 .entry {
-  position: relative;
   display: flex;
   align-items: center;
   gap: 12px;
   padding: 18px 16px 16px;
-  transition: transform 0.18s ease, box-shadow 0.18s ease;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color var(--dur-fast) var(--ease-out);
 }
 
 .entry::before {
@@ -147,14 +140,11 @@ h1 {
 }
 
 .entry:hover {
-  transform: rotate(0deg) translateY(-2px);
-  box-shadow: var(--shadow);
+  border-color: var(--ink-quiet);
 }
 
 .entry-emoji {
   font-size: 26px;
-  filter: drop-shadow(0 3px 3px rgba(84, 56, 42, 0.25));
-  transform: rotate(5deg);
 }
 
 .entry-body {
@@ -164,9 +154,8 @@ h1 {
 }
 
 .entry-title {
-  font-family: var(--font-hand);
-  font-size: 16px;
-  font-weight: 700;
+  font-size: 15px;
+  font-weight: 600;
 }
 
 .entry-desc {
@@ -201,7 +190,7 @@ h1 {
 .thumb {
   width: 76px;
   height: 76px;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   object-fit: cover;
   flex-shrink: 0;
 }
@@ -219,8 +208,7 @@ h1 {
 }
 
 .who {
-  font-family: var(--font-hand);
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .text {
@@ -234,7 +222,7 @@ h1 {
   margin-top: 8px;
   font-size: 12px;
   padding: 3px 9px;
-  border-radius: 999px;
+  border-radius: var(--radius-sm);
   background: var(--brand-soft);
   color: var(--brand);
 }
