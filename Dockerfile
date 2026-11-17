@@ -30,12 +30,13 @@ COPY backend/ /app/
 # 收集 admin 的 CSS/JS。
 # settings_prod 用的是 WhiteNoise 的 manifest 存储，必须用 prod 配置跑一遍才会生成 manifest；
 # 这一步不连数据库，DATABASE_URL 只是为了让 settings_prod 的启动校验通过。
+# 注意主机名不能写 127.0.0.1：settings_prod 会把「本机地址」判成变量没生效并直接报错。
 RUN SECRET_KEY=build-only-not-used-at-runtime \
-    ALLOWED_HOSTS=.koyeb.app \
+    ALLOWED_HOSTS=.up.railway.app \
     CORS_ALLOWED_ORIGINS=https://example.com \
     CSRF_TRUSTED_ORIGINS=https://example.com \
     DB_ENGINE=postgres \
-    DATABASE_URL=postgresql://build:build@127.0.0.1:5432/build \
+    DATABASE_URL=postgresql://build:build@db.invalid:5432/build \
     python manage.py collectstatic --no-input
 
 EXPOSE 8000

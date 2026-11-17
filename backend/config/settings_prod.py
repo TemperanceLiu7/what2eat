@@ -33,6 +33,34 @@ if DATABASES["default"]["ENGINE"] not in {  # noqa: F405
         "设置 DB_ENGINE=mysql 及 DB_* 变量，或 DB_ENGINE=postgres + DATABASE_URL"
     )
 
+# 数据库地址不能是「本机」：平台上的变量引用写错时（服务名对不上、行尾多空格），
+# 平台不会报错，只会把变量解析成空字符串，settings 于是退回 DB_HOST 默认值 127.0.0.1，
+# 启动时报一串 connection refused，很难看出其实是变量没生效。这里直接拦下来，
+# 并把容器「实际收到了哪些变量名」一起打出来——只打名字和长度，不打值。
+if DATABASES["default"].get("HOST", "") in {"", "127.0.0.1", "localhost"}:  # noqa: F405
+    import os
+
+    _raw_url = os.environ.get("DATABASE_URL")
+    if _raw_url is None:
+        _url_state = "DATABASE_URL 这个变量名在容器里不存在"
+    else:
+        _url_state = f"DATABASE_URL 存在但长度为 {len(_raw_url)}（值为空或只有空白）"
+
+    _db_keys = sorted(
+        k
+        for k in os.environ
+        if any(t in k.upper() for t in ("DATABASE", "PG", "DB_"))
+    )
+
+    raise ImproperlyConfigured(
+        f"生产环境的数据库地址是 {DATABASES['default'].get('HOST', '')!r}，"
+        f"说明容器没拿到可用的 DATABASE_URL：{_url_state}；"
+        f"容器里实际收到的数据库相关变量名（带引号，注意有没有多余空格）：{_db_keys or '（一个都没有）'}。"
+        "正解：Railway → 打开 Postgres 服务 → Variables → 复制 DATABASE_URL 的**值**，"
+        "回到本服务 Variables，变量名填 DATABASE_URL，值直接粘贴那串（以 postgresql:// 开头），"
+        "不要手打 ${{...}} 引用；同时确认 DB_ENGINE=postgres。"
+    )
+
 # 跨域只认白名单（不做通配）
 CORS_ALLOW_ALL_ORIGINS = env_bool("CORS_ALLOW_ALL_ORIGINS", default=False)
 CORS_ALLOWED_ORIGINS = env_list("CORS_ALLOWED_ORIGINS", ())
