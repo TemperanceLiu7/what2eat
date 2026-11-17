@@ -1,13 +1,16 @@
 """不依赖 django-cors-headers 的最小 CORS 中间件。
 
-前端是独立的 Vite 站点（:5173），必须跨域访问 :8000。
-放行规则来自 settings：``CORS_ALLOWED_ORIGINS`` 白名单，
+前端是独立的 Vite 站点（:5173 / Netlify / Pages），必须跨域访问 :8000。
+放行规则来自 settings：``CORS_ALLOWED_ORIGINS`` 精确白名单、
+``CORS_ALLOWED_ORIGIN_REGEXES`` 正则（用于 Netlify / Pages 这种带随机后缀的域名）、
 ``CORS_ALLOW_ALL_ORIGINS=True`` 时回显任意 Origin（仅开发环境默认开启）。
 
 预检（OPTIONS + Access-Control-Request-Method）直接回 204，不进 URL 路由，
 避免 DRF 因为「OPTIONS 没有权限」返回 401 把浏览器预检卡死。
 """
 from __future__ import annotations
+
+import re
 
 from django.conf import settings
 from django.http import HttpResponse
@@ -49,4 +52,9 @@ class CorsMiddleware:
     def _allowed(origin: str) -> bool:
         if getattr(settings, "CORS_ALLOW_ALL_ORIGINS", False):
             return True
-        return origin in set(getattr(settings, "CORS_ALLOWED_ORIGINS", ()))
+        if origin in set(getattr(settings, "CORS_ALLOWED_ORIGINS", ())):
+            return True
+        for pattern in getattr(settings, "CORS_ALLOWED_ORIGIN_REGEXES", ()) or ():
+            if re.fullmatch(pattern, origin):
+                return True
+        return False

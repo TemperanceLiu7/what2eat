@@ -142,6 +142,15 @@ CORS_ALLOW_ALL_ORIGINS = env_bool("CORS_ALLOW_ALL_ORIGINS", default=not IS_PROD)
 CORS_ALLOW_METHODS = "GET,POST,PUT,PATCH,DELETE,OPTIONS"
 CORS_ALLOW_HEADERS = "Authorization,Content-Type,Accept,X-Requested-With,X-CSRFToken"
 
+# 静态站点托管在 Netlify / Cloudflare Pages / Vercel 上时，域名是「项目名+随机后缀」，
+# 每次重建都可能变，逐个填进 CORS_ALLOWED_ORIGINS 不现实（且平台变量改错会静默失效）。
+# 这里按平台域名后缀放行——这些接口本身是公开读接口，风险与填白名单相当。
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^https://[a-z0-9-]+\.netlify\.app$",
+    r"^https://[a-z0-9-]+\.pages\.dev$",
+    r"^https://[a-z0-9-]+\.vercel\.app$",
+]
+
 CSRF_TRUSTED_ORIGINS = env_list("CSRF_TRUSTED_ORIGINS", CORS_ALLOWED_ORIGINS)
 
 # 反向代理下后台登录、绝对地址生成也要认平台域名
