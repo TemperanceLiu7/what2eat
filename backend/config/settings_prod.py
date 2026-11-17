@@ -33,6 +33,17 @@ if DATABASES["default"]["ENGINE"] not in {  # noqa: F405
         "设置 DB_ENGINE=mysql 及 DB_* 变量，或 DB_ENGINE=postgres + DATABASE_URL"
     )
 
+# 数据库地址不能是「本机」：平台上的变量引用写错时（服务名对不上、行尾多空格），
+# 平台不会报错，只会把变量解析成空字符串，settings 于是退回 DB_HOST 默认值 127.0.0.1，
+# 启动时报一串 connection refused，很难看出其实是变量没生效。这里直接拦下来。
+if DATABASES["default"].get("HOST", "") in {"", "127.0.0.1", "localhost"}:  # noqa: F405
+    raise ImproperlyConfigured(
+        "生产环境的数据库地址是 127.0.0.1/localhost，说明容器里没拿到 DATABASE_URL。"
+        "请检查平台变量：DATABASE_URL 必须是数据库服务的引用而不是手打的值"
+        "（Railway：Variables → Add Reference → 选 Postgres 服务 → DATABASE_URL），"
+        "或显式填完整连接串；同时确认 DB_ENGINE=postgres。"
+    )
+
 # 跨域只认白名单（不做通配）
 CORS_ALLOW_ALL_ORIGINS = env_bool("CORS_ALLOW_ALL_ORIGINS", default=False)
 CORS_ALLOWED_ORIGINS = env_list("CORS_ALLOWED_ORIGINS", ())

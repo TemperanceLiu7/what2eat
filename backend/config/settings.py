@@ -207,6 +207,11 @@ elif DB_ENGINE in {"postgres", "postgresql", "pgsql"}:
         这种连接不保证会话级状态，psycopg 的「会话内预编译语句」会失效，
         必须把 ``prepare_threshold`` 置空。带不带 pooler 都能跑。
         """
+        # 同一项目内的内网库（Railway ``*.railway.internal``、Render ``*.internal``）
+        # 一律不开 SSL：它们的 Postgres 没有配证书，默认的 require 会直接连不上。
+        if (host or "").endswith(".internal") and default_sslmode == "require":
+            default_sslmode = "prefer"
+
         options: dict = {"sslmode": env("DB_SSLMODE", default_sslmode)}
         if "-pooler" in (host or ""):
             options["prepare_threshold"] = None
