@@ -6,6 +6,8 @@
 
 **前端**：<https://celebrated-jalebi-812a02.netlify.app>
 
+<img src="docs/qrcode.png" alt="扫码打开" width="180" />
+
 **后端 API**：<https://what2eat-api-production.up.railway.app/api>
 
 - 健康检查 <https://what2eat-api-production.up.railway.app/api/health/>
@@ -16,7 +18,7 @@
 
 部署形态：前端 Netlify 静态托管，后端 Railway（Django + gunicorn + PostgreSQL）。代码同时推送到 `Ares5807/what2eat` 与 `TemperanceLiu7/what2eat`，两个仓库内容一致。
 
-> 原 `what2eatt.pages.dev` 的 Cloudflare Pages 站点已停用；`docs/qrcode.png` 里的二维码仍指向旧地址，需要按新域名重新生成。
+> 原 `what2eatt.pages.dev` 的 Cloudflare Pages 站点已停用。`docs/qrcode.png` 已按当前 Netlify 地址重新生成（451×451，QR 版本 4、纠错级别 Q），若域名变更需同步重新生成。
 
 ## 本地地址
 
