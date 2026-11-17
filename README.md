@@ -4,7 +4,7 @@
 
 ## 线上地址
 
-**前端**：<https://celebrated-jalebi-812a02.netlify.app>
+**前端**：<https://what2eat-campus.netlify.app>
 
 <img src="docs/qrcode.png" alt="扫码打开" width="180" />
 
@@ -330,7 +330,7 @@ VITE_USE_MOCK=false
 
 | 部分 | 平台 | 说明 |
 | --- | --- | --- |
-| 前端 | **Netlify**（直传 `dist` 静态包） | `celebrated-jalebi-812a02.netlify.app` |
+| 前端 | **Netlify**（直传 `dist` 静态包） | `what2eat-campus.netlify.app` |
 | 后端 | **Railway**（Docker + gunicorn） | `what2eat-api-production.up.railway.app` |
 | 数据库 | **Railway PostgreSQL** | 容器启动时自动 `migrate` + `bootstrap` 种子数据 |
 

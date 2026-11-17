@@ -203,6 +203,6 @@ Workers & Pages 拆到了 Build → Compute，入口难找）。两条路选一�
 
 本次实际落地（2026-11-17）：
 
-- 前端 <https://celebrated-jalebi-812a02.netlify.app>（Netlify 直传 `dist`）
+- 前端 <https://what2eat-campus.netlify.app>（Netlify 直传 `dist`）
 - 后端 <https://what2eat-api-production.up.railway.app>（Railway Docker + gunicorn）
 - 数据库 Railway PostgreSQL，容器启动自动迁移 + 种子（6 档口 / 16 菜）
