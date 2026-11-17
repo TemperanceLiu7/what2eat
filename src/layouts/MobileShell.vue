@@ -10,11 +10,9 @@ import { isLoggedIn, isVerified } from '@/stores/app'
         <span>今天吃什么</span>
       </router-link>
       <router-link :to="isLoggedIn ? '/me' : '/login'" class="m-user">
-        <van-tag v-if="isVerified" plain color="var(--brand)" text-color="var(--brand)">已认证</van-tag>
-        <van-tag v-else-if="isLoggedIn" plain color="var(--brand)" text-color="var(--brand)">
-          未核验
-        </van-tag>
-        <van-tag v-else plain color="var(--ink-quiet)" text-color="var(--ink-quiet)">登录</van-tag>
+        <van-tag v-if="isVerified" type="success" round>已认证</van-tag>
+        <van-tag v-else-if="isLoggedIn" round color="var(--brand-soft)" text-color="var(--brand)">未核验</van-tag>
+        <van-tag v-else round color="var(--surface-soft)" text-color="var(--ink-soft)">登录</van-tag>
       </router-link>
     </header>
 
@@ -25,7 +23,7 @@ import { isLoggedIn, isVerified } from '@/stores/app'
     <van-tabbar
       route
       :border="false"
-      active-color="var(--ink)"
+      active-color="var(--brand-strong)"
       inactive-color="var(--muted)"
       safe-area-inset-bottom
       class="m-tabbar"
@@ -51,8 +49,9 @@ import { isLoggedIn, isVerified } from '@/stores/app'
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: var(--bg);
-  border-bottom: 1px solid var(--line);
+  background: color-mix(in srgb, var(--bg) 90%, transparent);
+  backdrop-filter: saturate(160%) blur(12px);
+  border-bottom: 1px dashed var(--brand-line-soft);
   padding-top: env(safe-area-inset-top);
 }
 

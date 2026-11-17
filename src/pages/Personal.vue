@@ -169,10 +169,24 @@ h1 {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 16px;
-  border: 1px solid var(--line);
-  border-left: 2px solid var(--brand);
-  background: var(--surface);
+  margin-bottom: 22px;
+  border: 1px dashed var(--brand-line);
+  background: var(--brand-soft);
+  transform: rotate(-0.6deg);
+}
+
+.notice::before {
+  content: '';
+  position: absolute;
+  top: -7px;
+  left: 26px;
+  width: 56px;
+  height: 13px;
+  transform: rotate(-2deg);
+  background: color-mix(in srgb, var(--brand) 35%, transparent);
+  border-left: 1px dashed rgba(255, 255, 255, 0.5);
+  border-right: 1px dashed rgba(255, 255, 255, 0.5);
+  border-radius: 2px;
 }
 
 .notice p {
@@ -235,13 +249,13 @@ h1 {
 }
 
 .entry.brand {
-  background: var(--surface);
+  background: linear-gradient(135deg, var(--brand-soft), var(--surface));
 }
 .entry.warm {
-  background: var(--surface);
+  background: linear-gradient(135deg, var(--brand-line-soft), var(--surface));
 }
 .entry.soft {
-  background: var(--surface);
+  background: linear-gradient(135deg, var(--surface-soft), var(--surface));
 }
 
 .pref {
@@ -337,8 +351,8 @@ h1 {
 .lock {
   font-size: 11px;
   color: var(--brand-2-deep);
-  background: var(--surface-soft);
-  border-radius: var(--radius-sm);
+  background: var(--brand-line-soft);
+  border-radius: 999px;
   padding: 2px 8px;
 }
 

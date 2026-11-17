@@ -17,6 +17,40 @@ const rolling = ref(false)
 // 抽签序号：让「同一道菜再次中签」也能重播入场动画（key 里带上它）
 const drawSeq = ref(0)
 
+// 各主题横幅贴纸（右上角 / 左下角）与抽签彩带配色
+const STICKERS = {
+  latte: { top: '☕', bottom: '🍰' },
+  lemon: { top: '🍋', bottom: '🥤' },
+  peach: { top: '🍑', bottom: '🍨' },
+}
+const CONFETTI_COLORS = {
+  latte: ['#b5673f', '#e9b44c', '#f4edd9', '#8a5a44', '#7d9168', '#e8913f'],
+  lemon: ['#6faecf', '#efc65e', '#fdfaf0', '#5796b6', '#7fb8d6', '#a6d0e6'],
+  peach: ['#e08280', '#fbdca5', '#fff3f3', '#c96664', '#f69e9d', '#f8c3cb'],
+}
+const stickerTop = computed(() => STICKERS[ui.theme]?.top || STICKERS.latte.top)
+const stickerBottom = computed(() => STICKERS[ui.theme]?.bottom || STICKERS.latte.bottom)
+
+const confetti = ref([])
+let confettiSeq = 0
+function burstConfetti() {
+  const colors = CONFETTI_COLORS[ui.theme] || CONFETTI_COLORS.latte
+  confetti.value = Array.from({ length: 24 }, (_, i) => ({
+    id: ++confettiSeq,
+    left: 6 + Math.random() * 88,
+    delay: Math.random() * 0.16,
+    duration: 1.4 + Math.random() * 1.1,
+    color: colors[i % colors.length],
+    rotate: Math.random() * 720 - 360,
+    drift: Math.random() * 140 - 70,
+    round: i % 3 === 0,
+    size: 6 + Math.random() * 6,
+  }))
+  window.setTimeout(() => {
+    confetti.value = []
+  }, 2800)
+}
+
 const liked = ref(false)
 const faved = ref(false)
 
@@ -57,6 +91,7 @@ async function roll() {
     drawSeq.value += 1
     syncFlags(picked)
     if (picked) pushEaten(picked)
+    if (picked) burstConfetti()
   } catch (err) {
     toast(err?.message || '抽签失败，稍后再试')
   } finally {
@@ -124,27 +159,63 @@ async function enableShake() {
 
 <template>
   <div class="page home">
-    <section class="hero">
-      <h1>今天吃什么</h1>
-      <p class="hero-sub">按来源筛一下，抽一道。抽到的会写进「最近」，不会连着重复。</p>
+    <!-- 手帐主卡：米白波点纸框 + 棕纸内页 + 胶带枝叶 + 贴纸 -->
+    <section class="promo-banner">
+      <div class="dotted-frame">
+        <div class="frame-body">
+          <span class="tape-sprig tape-top" aria-hidden="true"></span>
+          <span class="tape-sprig tape-bottom" aria-hidden="true"></span>
+          <span class="sticker sticker-cup" aria-hidden="true">{{ stickerTop }}</span>
+          <span class="sticker sticker-cake" aria-hidden="true">{{ stickerBottom }}</span>
+          <div class="banner-copy">
+            <div class="banner-tag"><span class="tag-flash">⚡</span> 校园专属 · 每日精选</div>
+            <h1>今天吃<span>什么</span>？</h1>
+            <p>选择困难？一键随机，摇到就吃</p>
+            <div class="banner-points">
+              <span><i>✓</i> 全网比价</span>
+              <span><i>✓</i> 人气加权</span>
+              <span><i>✓</i> 学生认证</span>
+            </div>
+          </div>
+        </div>
+      </div>
     </section>
 
-    <div class="source-bar">
+    <nav class="category-nav card" aria-label="推荐范围">
       <button
         v-for="s in SOURCES"
         :key="s.key"
-        class="chip"
+        class="category"
         :class="{ active: source === s.key }"
         @click="source = s.key"
       >
-        {{ s.label }}
+        <span class="category-icon">{{ s.emoji }}</span>
+        <span class="category-label">{{ s.label }}</span>
       </button>
-    </div>
+    </nav>
 
     <div class="home-grid">
       <section class="draw card">
         <div class="slot" :class="{ rolling }" :aria-busy="rolling" aria-live="polite">
           <span class="slot-frame" aria-hidden="true"></span>
+          <div class="confetti-layer" aria-hidden="true">
+            <i
+              v-for="b in confetti"
+              :key="b.id"
+              class="confetti"
+              :class="{ round: b.round }"
+              :style="{
+                left: b.left + '%',
+                background: b.color,
+                width: b.size + 'px',
+                height: (b.round ? b.size : b.size * 1.7) + 'px',
+                '--delay': b.delay + 's',
+                '--dur': b.duration + 's',
+                '--rot': b.rotate + 'deg',
+                '--drift': b.drift + 'px',
+              }"
+            />
+          </div>
 
           <div v-if="rolling" key="rolling" class="slot-inner slot-wait">
             <p class="slot-name slot-name--quiet">抽签中</p>
@@ -153,8 +224,8 @@ async function enableShake() {
           <div v-else-if="dish" :key="`${dish.id}-${drawSeq}`" class="slot-inner slot-dish">
               <p class="slot-no num">第 {{ drawSeq }} 次</p>
               <h2 class="slot-name">{{ dish.name }}</h2>
-              <p class="slot-shop">{{ dish.shop.name }}</p>
-              <p class="slot-loc">{{ dish.shop.location }}</p>
+              <p class="slot-shop">{{ dish.shop?.name }}</p>
+              <p class="slot-loc">{{ dish.shop?.location }}</p>
 
               <ul class="slot-meta">
                 <li class="price num">¥{{ dish.price }}</li>
@@ -246,34 +317,164 @@ async function enableShake() {
 <style scoped>
 .home {
   --draw-dur: 0.52s;
+  --rise-dur: 0.38s;
+  --hot: var(--brand-strong);
+  --hot-deep: var(--kraft-deep);
+  --gold: var(--brand-2);
 }
 
-.hero {
-  padding: var(--space-4) 0 18px;
-  border-bottom: 1px solid var(--line);
+/* ---------- 手帐主卡（波点纸框 + 棕纸内页） ---------- */
+.promo-banner {
   margin-bottom: 18px;
 }
 
-.hero h1 {
-  font-size: var(--fs-2xl);
-  line-height: 1.2;
+.frame-body {
+  position: relative;
+  min-height: 208px;
+  padding: 36px 36px;
+  color: var(--cream);
 }
 
-.hero-sub {
+.tape-top {
+  position: absolute;
+  top: 5px;
+  left: 26px;
+  right: 26px;
+}
+
+.tape-bottom {
+  position: absolute;
+  bottom: 5px;
+  left: 26px;
+  right: 26px;
+}
+
+.sticker-cup {
+  position: absolute;
+  top: 18px;
+  right: 28px;
+  font-size: 34px;
+  transform: rotate(8deg);
+}
+
+.sticker-cake {
+  position: absolute;
+  bottom: 20px;
+  left: 24px;
+  font-size: 30px;
+  transform: rotate(-7deg);
+}
+
+.banner-copy {
+  position: relative;
+  z-index: 1;
+  max-width: 66%;
+}
+
+.banner-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(244, 237, 217, 0.16);
+  border: 1px solid rgba(244, 237, 217, 0.3);
+  margin-bottom: 14px;
+}
+
+.tag-flash { font-size: 13px; }
+
+.banner-copy h1 {
+  font-family: var(--font-hand);
+  font-size: 42px;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: 0.01em;
+  color: var(--cream);
+  text-shadow: 0 2px 8px rgba(60, 30, 18, 0.25);
+}
+.banner-copy h1 span { color: var(--brand-2); }
+
+.banner-copy > p {
   margin-top: 8px;
-  color: var(--muted);
-  font-size: var(--fs-sm);
-  line-height: 1.7;
-  max-width: 46em;
+  font-size: 16px;
+  font-weight: 500;
+  opacity: 0.96;
 }
 
-.source-bar {
+.banner-points {
   display: flex;
-  gap: 8px;
   flex-wrap: wrap;
+  gap: 8px 18px;
+  margin-top: 20px;
+}
+.banner-points span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.banner-points i {
+  font-style: normal;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  background: var(--cream);
+  color: var(--kraft-deep);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.category-nav {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4px;
+  padding: 18px 10px;
   margin-bottom: 18px;
 }
 
+.category {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 4px;
+  border: none;
+  background: transparent;
+  border-radius: 14px;
+  transition: transform var(--dur-fast) var(--ease-out), background var(--dur-fast) var(--ease-out);
+}
+.category:hover { transform: translateY(-3px); background: var(--brand-soft); }
+.category.active { background: var(--surface-soft); }
+
+.category-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  font-size: 26px;
+  border-radius: 18px;
+  background: linear-gradient(145deg, var(--brand-soft), var(--surface-soft));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 4px 10px rgba(138, 90, 68, 0.14);
+  transition: all var(--dur-fast) var(--ease-out);
+}
+.category.active .category-icon {
+  background: var(--brand-grad);
+  box-shadow: 0 6px 16px var(--brand-glow);
+  transform: scale(1.06);
+}
+.category-label { font-size: 13px; font-weight: 600; color: var(--ink-soft); }
+.category.active .category-label { color: var(--hot); font-weight: 700; }
+
+/* ---------- 主栅格 ---------- */
 .home-grid {
   display: grid;
   grid-template-columns: minmax(0, 1.55fr) minmax(260px, 0.85fr);
@@ -314,6 +515,51 @@ async function enableShake() {
   border: 1px dashed var(--line);
   border-radius: 2px;
   pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(circle at 50% 46%, var(--brand-glow) 0%, transparent 62%);
+}
+.slot::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateX(-120%);
+  background: linear-gradient(105deg, transparent 32%, rgba(255, 255, 255, 0.75) 48%, transparent 64%);
+}
+.slot.rolling { animation: slot-flow var(--draw-dur) var(--ease-out) both; }
+.slot.rolling::before { animation: aura-pulse var(--draw-dur) var(--ease-out) both; }
+.slot.rolling::after { animation: sheen-sweep var(--draw-dur) var(--ease-out) both; }
+
+@keyframes slot-flow {
+  0% { background-position: 0% 50%; }
+  55% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+@keyframes aura-pulse {
+  0% { opacity: 0; transform: scale(0.9); }
+  35% { opacity: 0.9; transform: scale(1); }
+  70% { opacity: 0.45; transform: scale(1.06); }
+  100% { opacity: 0; transform: scale(1.02); }
+}
+@keyframes sheen-sweep {
+  0% { opacity: 0; transform: translateX(-120%); }
+  20% { opacity: 1; }
+  70% { opacity: 0.9; transform: translateX(120%); }
+  100% { opacity: 0; transform: translateX(120%); }
+}
+
+.confetti-layer { position: absolute; inset: 0; z-index: 3; pointer-events: none; overflow: hidden; border-radius: inherit; }
+.confetti {
+  position: absolute; top: -14px; display: block; border-radius: 2px; opacity: 0;
+  animation: confetti-fall var(--dur) var(--ease-out) var(--delay) forwards;
+}
+.confetti.round { border-radius: 50%; }
+@keyframes confetti-fall {
+  0% { opacity: 0; transform: translate3d(0, -10px, 0) rotate(0); }
+  8% { opacity: 1; }
+  100% { opacity: 0; transform: translate3d(var(--drift), 320px, 0) rotate(var(--rot)); }
 }
 
 .slot.rolling .slot-frame {
@@ -517,7 +763,6 @@ async function enableShake() {
 .rail::-webkit-scrollbar {
   display: none;
 }
-
 .rail-item {
   flex: 0 0 auto;
   width: 124px;
@@ -544,19 +789,18 @@ async function enableShake() {
 }
 
 @media (max-width: 820px) {
-  .hero h1 {
-    font-size: 24px;
-  }
-  .source-bar {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    padding-bottom: 4px;
-    margin-bottom: 14px;
-    scrollbar-width: none;
-  }
-  .source-bar::-webkit-scrollbar {
-    display: none;
-  }
+  .frame-body { min-height: 176px; padding: 28px 22px; }
+  .banner-copy { max-width: 90%; }
+  .banner-copy h1 { font-size: 26px; }
+  .banner-copy > p { font-size: 13px; }
+  .banner-points { margin-top: 14px; gap: 6px 12px; }
+  .banner-points span { font-size: 11px; }
+  .sticker-cup { font-size: 26px; right: 16px; }
+  .sticker-cake { font-size: 24px; left: 14px; }
+  .confetti { display: none; }
+  .category-nav { padding: 14px 4px; gap: 0; }
+  .category-icon { width: 46px; height: 46px; font-size: 22px; border-radius: 14px; }
+  .category-label { font-size: 11px; }
   .home-grid {
     grid-template-columns: 1fr;
   }

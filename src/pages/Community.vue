@@ -113,8 +113,30 @@ h1 {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 16px;
-  transition: border-color var(--dur-fast) var(--ease-out);
+  padding: 18px 16px 16px;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color var(--dur-fast) var(--ease-out);
+}
+
+.entry::before {
+  content: '';
+  position: absolute;
+  top: -7px;
+  left: 24px;
+  width: 52px;
+  height: 13px;
+  transform: rotate(3deg);
+  background: color-mix(in srgb, var(--leaf) 45%, transparent);
+  border-left: 1px dashed rgba(255, 255, 255, 0.5);
+  border-right: 1px dashed rgba(255, 255, 255, 0.5);
+  border-radius: 2px;
+}
+
+.entry:nth-child(odd) {
+  transform: rotate(0.9deg);
+}
+
+.entry:nth-child(even) {
+  transform: rotate(-1deg);
 }
 
 .entry:hover {
@@ -147,10 +169,10 @@ h1 {
 }
 
 .entry.brand {
-  background: var(--surface);
+  background: linear-gradient(135deg, var(--brand-soft), var(--surface));
 }
 .entry.warm {
-  background: var(--surface);
+  background: linear-gradient(135deg, var(--brand-line-soft), var(--surface));
 }
 
 .more {

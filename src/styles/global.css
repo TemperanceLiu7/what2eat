@@ -5,47 +5,59 @@
 }
 
 /* ==========================================================================
-   设计令牌 Design Tokens
-   页面样式只引用这一层变量，不再散落颜色 / 间距 / 阴影字面量。
-   风格取向：食堂菜单牌 / 校报排版 —— 纸底、墨字、一个朱红点缀。
-   刻意不用：渐变、光晕、投影、玻璃拟态、大圆角。这几样是"AI 生成感"的主要来源。
+   设计令牌 Design Tokens —— 手帐 journal 风
+   配色取自参考手帐页：豆绿纸底 + 棕纸卡 + 米白波点边框 + 胶带枝叶 + 贴纸
+   顺序：字体 → 品牌色 → 表面 → 文字 → 分隔线 → 圆角 → 间距 → 阴影 → 字号 → 动效 → 布局
    ========================================================================== */
 
 :root {
-  /* ---------- 1. 品牌色（朱红 + 灰绿，均为低饱和） ---------- */
-  --brand: #b03a2e; /* 主色：只在主操作、价格、当前项上出现 */
-  --brand-strong: #8d2c22; /* 按压 / 悬停 */
-  --brand-2: #6b7f6e; /* 辅色：灰绿，用于"已完成/正常"类语义 */
-  --brand-2-deep: #4f6153;
-  --brand-soft: #f4e9e4; /* 主色浅底 */
-  --brand-line: #d4b3a9; /* 主色描边 */
-  --brand-line-soft: #e4d8cf;
-  --brand-grad: var(--brand); /* 兼容旧引用：现在就是纯色，不再渐变 */
-  --brand-glow: transparent; /* 兼容旧引用：去掉光晕 */
+  /* ---------- 0. 字体 ---------- */
+  --font-body: 'ChillRoundF', 'Resource Han Rounded CN', 'PingFang SC', 'Hiragino Sans GB',
+    'Microsoft YaHei', sans-serif;
+  --font-hand: 'LXGW Marker Gothic', 'ChillRoundF', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --font-serif: Georgia, 'Songti SC', 'STSong', 'Noto Serif CJK SC', 'SimSun', serif;
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB',
+    'Microsoft YaHei', sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, 'Courier New', monospace;
 
-  /* ---------- 2. 背景 / 表面（纸感） ---------- */
-  --bg: #f6f3ec; /* 页面底色：米白纸 */
-  --surface: #fffdf8; /* 卡片 */
-  --surface-soft: #f0ebe0; /* 浅填充：标签、序号块 */
-  --surface-warm: #fbf7ef; /* 兼容旧引用：原来是渐变，现在是纯色 */
+  /* ---------- 1. 品牌色（暖棕橘，配豆绿纸底） ---------- */
+  --brand: #b5673f; /* 主色：烤棕橘，CTA / 强调 */
+  --brand-strong: #9a5230; /* 主色深一档：按压 / 强调 */
+  --brand-2: #e9b44c; /* 辅色：麦穗黄，排行、次强调 */
+  --brand-2-deep: #8a6a2f; /* 辅色上的正文 */
+  --brand-soft: #f6e7d6; /* 主色浅底：标签、选中态背景 */
+  --brand-line: #e7c6ab; /* 主色描边：hover */
+  --brand-line-soft: #f0dcc8; /* 主色描边：常态 */
+  --brand-grad: linear-gradient(135deg, #c97a4e, #a85a33);
+  --brand-glow: rgba(181, 103, 63, 0.28);
 
-  /* ---------- 3. 文字（墨色三级） ---------- */
-  --ink: #1a1917; /* 主文字：接近墨黑，不用纯黑 */
-  --ink-soft: #54504a; /* 次级：店铺名、标签 */
-  --ink-quiet: #6f6a62; /* 弱化：空状态标题 */
-  --muted: #8b857a; /* 说明文字 */
+  /* ---------- 2. 背景 / 表面 ---------- */
+  --bg: #aab59a; /* 页面豆绿纸底 */
+  --surface: #f7f0dc; /* 米白便签卡 */
+  --surface-soft: #ece1c4; /* 浅米填充：标签、序号块 */
+  --surface-warm: linear-gradient(160deg, #fbf4e2 0%, #f7efd8 55%, #f3ead0 100%);
+  --kraft: #8a5a44; /* 棕纸 */
+  --kraft-deep: #6f4430; /* 深棕文字 / 棕纸条 */
+  --cream: #f4edd9; /* 米白纸框 / 贴纸 */
+  --leaf: #7d9168; /* 枝叶绿 */
+
+  /* ---------- 3. 文字 ---------- */
+  --ink: #54382a; /* 主文字（棕墨） */
+  --ink-soft: #6f5544; /* 次级文字 */
+  --ink-quiet: #836852; /* 弱化文字 */
+  --muted: #93796a; /* 说明文字 */
 
   /* ---------- 4. 分隔线 ---------- */
-  --line: #e3ddd1;
-  --line-scroll: #d5cec1;
-  --line-scroll-hover: #bfb7a8;
+  --line: #e2d7ba;
+  --line-scroll: #c9bb97;
+  --line-scroll-hover: #b3a278;
 
-  /* ---------- 5. 圆角（一律小圆角，接近直角） ---------- */
-  --radius-sm: 2px;
-  --radius-md: 3px;
-  --radius-lg: 4px;
-  --radius-pill: 2px; /* 旧代码里的胶囊按钮/标签现在变成方角 */
-  --radius: var(--radius-lg); /* 兼容早期引用 */
+  /* ---------- 5. 圆角 ---------- */
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-pill: 999px;
+  --radius: var(--radius-lg);
 
   /* ---------- 6. 间距阶梯（4 / 8 / 12 / 16 / 24 / 32） ---------- */
   --space-4: 4px;
@@ -55,35 +67,55 @@
   --space-24: 24px;
   --space-32: 32px;
 
-  /* ---------- 7. 阴影：全部取消，靠 1px 边框分层 ---------- */
-  --shadow-sm: none;
-  --shadow: none;
-  --shadow-brand: none;
+  /* ---------- 7. 阴影（暖调两级 + 品牌光晕） ---------- */
+  --shadow-sm: 0 2px 10px rgba(84, 56, 42, 0.12);
+  --shadow: 0 12px 30px rgba(84, 56, 42, 0.18);
+  --shadow-brand: 0 6px 16px var(--brand-glow);
 
-  /* ---------- 8. 字号阶梯（收敛一档，标题靠字体不靠体积） ---------- */
+  /* ---------- 8. 字号阶梯 ---------- */
   --fs-xs: 12px;
   --fs-sm: 13px;
   --fs-base: 14px;
-  --fs-md: 15px;
-  --fs-lg: 17px;
-  --fs-xl: 22px;
-  --fs-2xl: 30px;
+  --fs-md: 16px;
+  --fs-lg: 18px;
+  --fs-xl: 24px;
+  --fs-2xl: 34px;
 
-  /* ---------- 9. 动效：只保留短促的位移/透明度，不做回弹 ---------- */
-  --ease-out: cubic-bezier(0.2, 0, 0, 1);
-  --ease-back: cubic-bezier(0.2, 0, 0, 1);
-  --dur-fast: 0.12s;
-  --dur-base: 0.16s;
-  --dur-slow: 0.24s;
+  /* ---------- 9. 动效节奏 ---------- */
+  --ease-out: cubic-bezier(0.22, 0.9, 0.28, 1);
+  --ease-back: cubic-bezier(0.2, 0.9, 0.25, 1.18);
+  --dur-fast: 0.18s;
+  --dur-base: 0.28s;
+  --dur-slow: 0.52s;
 
   /* ---------- 10. 布局 ---------- */
-  --page-w: 1080px;
+  --page-w: 1120px;
+}
 
-  /* ---------- 11. 字体族：标题衬线，正文黑体，数字等宽 ---------- */
-  --font-serif: Georgia, 'Songti SC', 'STSong', 'Noto Serif CJK SC', 'SimSun', serif;
-  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB',
-    'Microsoft YaHei', sans-serif;
-  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, 'Courier New', monospace;
+/* ---------- 手写 / 圆体字体（已核验 CDN，失败回退系统圆体） ---------- */
+@font-face {
+  font-family: 'ChillRoundF';
+  src: url('https://lf-flow-web-cdn.doubao.com/obj/flow-doubao/doubao/infinite-canvas/fonts/v1/chill-round/chillroundfregular.otf')
+    format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'ChillRoundF';
+  src: url('https://lf-flow-web-cdn.doubao.com/obj/flow-doubao/doubao/infinite-canvas/fonts/v1/chill-round/chillroundfbold.otf')
+    format('opentype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'LXGW Marker Gothic';
+  src: url('https://lf-flow-web-cdn.doubao.com/obj/flow-doubao/doubao/infinite-canvas/fonts/v1/lxgw-marker-gothic/lxgwmarkergothic.ttf')
+    format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
 }
 
 html,
@@ -92,46 +124,177 @@ body,
   min-height: 100%;
 }
 
+html body,
+#app {
+  font-family: var(--font-body);
+}
+
 body {
   margin: 0;
-  font-family: var(--font-sans);
+  font-family: var(--font-body);
   color: var(--ink);
-  background: var(--bg);
+  /* 豆绿纸底 + 纤维噪点 */
+  background-color: var(--bg);
+  background-image:
+    radial-gradient(rgba(255, 255, 255, 0.12) 1px, transparent 1.4px),
+    radial-gradient(rgba(84, 56, 42, 0.07) 1px, transparent 1.4px),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.06'/%3E%3C/svg%3E");
+  background-size: 22px 22px, 22px 22px, 160px 160px;
   -webkit-font-smoothing: antialiased;
   -webkit-tap-highlight-color: transparent;
 }
 
-::selection {
-  background: var(--brand-soft);
-  color: var(--ink);
-}
-
 /*
- * 主题色覆盖：
- * 必须写在 html:root 上。Vant 在 :root 里就把 --van-button-primary-background 算成了
- * var(--van-primary-color) 的具体值，写在 body 上只影响 body 子树，改不动按钮。
- * html:root 的优先级（0,1,1）高于 :root（0,1,0），也不依赖打包顺序。
- *
- * 注意：这一段里保留主色字面量是有意为之 —— 组件库在打包时就把这些值算进了自己的变量，
- * 交给 var(--brand) 反而容易被加载顺序影响；改主色时这里和上面第 1 组要一起改。
+ * 组件库主题覆盖：写在 html:root 上，优先级高于 :root，不依赖打包顺序。
+ * 这里保留主色字面量 —— 组件库打包时就把变量算成了具体值。
  */
 html:root {
-  --el-color-primary: #b03a2e;
-  --el-color-primary-light-3: #c0655a;
-  --el-color-primary-light-5: #cb8378;
-  --el-color-primary-light-7: #dcaaa2;
-  --el-color-primary-light-8: #e6c2bc;
-  --el-color-primary-light-9: #f4e9e4;
-  --el-color-primary-dark-2: #8d2c22;
-  --el-border-radius-base: 3px;
-  --el-border-radius-small: 2px;
-  --el-box-shadow-light: none;
-  --el-font-family: var(--font-sans);
+  --el-color-primary: #b5673f;
+  --el-color-primary-light-3: #cf8a63;
+  --el-color-primary-light-5: #dda784;
+  --el-color-primary-light-7: #ecc5ab;
+  --el-color-primary-light-8: #f2d6c2;
+  --el-color-primary-light-9: #f6e7d6;
+  --el-color-primary-dark-2: #9a5230;
+  --el-border-radius-base: 12px;
 
-  --van-primary-color: #b03a2e;
-  --van-blue: #b03a2e;
-  --van-radius-md: 3px;
-  --van-radius-lg: 4px;
+  --van-primary-color: #b5673f;
+  --van-blue: #b5673f;
+
+  --el-input-bg-color: #f4edd9;
+  --el-input-border-color: #e2d7ba;
+  --el-input-text-color: #54382a;
+  --el-input-placeholder-color: #93796a;
+  --el-input-hover-border-color: #e7c6ab;
+  --el-input-focus-border-color: #b5673f;
+}
+
+/* ---------- 组件库控件纸色统一 ---------- */
+.el-input__wrapper {
+  background-color: var(--cream) !important;
+  box-shadow: 0 0 0 1px var(--line) inset;
+  border-radius: 10px;
+}
+.el-input__wrapper.is-focus {
+  box-shadow: 0 0 0 1px var(--brand-line) inset;
+}
+.el-button--default {
+  background: var(--cream);
+  border-color: var(--line);
+  color: var(--ink-soft);
+}
+.el-button--default:hover {
+  background: var(--brand-soft);
+  border-color: var(--brand-line);
+  color: var(--brand);
+}
+.van-field {
+  background: var(--cream);
+  border-radius: 10px;
+}
+.van-button--default {
+  background: var(--cream);
+  border-color: var(--line);
+  color: var(--ink-soft);
+}
+
+/* ==========================================================================
+   主题皮肤：只覆盖配色与点缀，布局 / 卡片 / 字体保持不变
+   默认：香草拿铁（:root）；海盐柠檬；芝士白桃
+   ========================================================================== */
+
+/* 海盐柠檬：浅黄纸底为主体，横幅与选框用汽水蓝 */
+html[data-theme='lemon'] {
+  --bg: #f9f4d4;
+  --surface: #fffaf0;
+  --surface-soft: #daeef5;
+  --surface-warm: linear-gradient(160deg, #fdfaf0 0%, #f9f4d4 55%, #f1ecd2 100%);
+  --kraft: #7fb8d6;
+  --kraft-deep: #5796b6;
+  --cream: #fdfaf0;
+  --leaf: #7fb8d6;
+
+  --brand: #6faecf;
+  --brand-strong: #5796b6;
+  --brand-2: #efc65e;
+  --brand-2-deep: #8a7a2f;
+  --brand-soft: #daeef5;
+  --brand-line: #a6d0e6;
+  --brand-line-soft: #cfe7f0;
+  --brand-grad: linear-gradient(135deg, #a6d0e6, #7fb8d6);
+  --brand-glow: rgba(127, 184, 214, 0.3);
+
+  --ink: #2f5a70;
+  --ink-soft: #4a6e82;
+  --ink-quiet: #5f7e8e;
+  --muted: #7c9aa8;
+
+  --line: #cfe3ec;
+  --line-scroll: #a6d0e6;
+  --line-scroll-hover: #7fb8d6;
+
+  --el-color-primary: #6faecf;
+  --el-color-primary-light-3: #8fbfd9;
+  --el-color-primary-light-5: #a9d0e4;
+  --el-color-primary-light-7: #c6e1ee;
+  --el-color-primary-light-8: #d6eaf3;
+  --el-color-primary-light-9: #daeef5;
+  --el-color-primary-dark-2: #5796b6;
+  --van-primary-color: #6faecf;
+  --van-blue: #6faecf;
+  --el-input-bg-color: #fdfaf0;
+  --el-input-border-color: #cfe3ec;
+  --el-input-text-color: #2f5a70;
+  --el-input-placeholder-color: #7c9aa8;
+  --el-input-hover-border-color: #a6d0e6;
+  --el-input-focus-border-color: #6faecf;
+}
+
+/* 芝士白桃：浅粉纸底 + 桃粉 */
+html[data-theme='peach'] {
+  --bg: #feebed;
+  --surface: #fff3f3;
+  --surface-soft: #fbe3e6;
+  --surface-warm: linear-gradient(160deg, #fff3f3 0%, #feebed 55%, #fbe0e2 100%);
+  --kraft: #e88b89;
+  --kraft-deep: #c96664;
+  --cream: #fff3f3;
+  --leaf: #f69e9d;
+
+  --brand: #e08280;
+  --brand-strong: #c96664;
+  --brand-2: #fbdca5;
+  --brand-2-deep: #a8844a;
+  --brand-soft: #fbe3e6;
+  --brand-line: #f3b9be;
+  --brand-line-soft: #fad6d9;
+  --brand-grad: linear-gradient(135deg, #f0a3a1, #e08280);
+  --brand-glow: rgba(246, 158, 157, 0.3);
+
+  --ink: #6e4148;
+  --ink-soft: #8a5a60;
+  --ink-quiet: #9a6b70;
+  --muted: #a98286;
+
+  --line: #f3d2d5;
+  --line-scroll: #f8c3cb;
+  --line-scroll-hover: #f69e9d;
+
+  --el-color-primary: #e08280;
+  --el-color-primary-light-3: #eba9a7;
+  --el-color-primary-light-5: #f2c2c1;
+  --el-color-primary-light-7: #f8d9d8;
+  --el-color-primary-light-8: #fbe5e5;
+  --el-color-primary-light-9: #fbe3e6;
+  --el-color-primary-dark-2: #c96664;
+  --van-primary-color: #e08280;
+  --van-blue: #e08280;
+  --el-input-bg-color: #fff3f3;
+  --el-input-border-color: #f3d2d5;
+  --el-input-text-color: #6e4148;
+  --el-input-placeholder-color: #a98286;
+  --el-input-hover-border-color: #f3b9be;
+  --el-input-focus-border-color: #e08280;
 }
 
 a {
@@ -141,13 +304,7 @@ a {
 
 h1,
 h2,
-h3 {
-  margin: 0;
-  font-family: var(--font-serif);
-  font-weight: 600;
-  letter-spacing: 0;
-}
-
+h3,
 p {
   margin: 0;
 }
@@ -157,7 +314,7 @@ button {
   cursor: pointer;
 }
 
-/* 数字（价格 / 热度 / 排名 / 计数）统一走等宽，避免"排版很 AI"的居中大字 */
+/* 数字（价格 / 热度 / 排名 / 计数）统一等宽 */
 .num {
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
@@ -178,17 +335,19 @@ button {
   }
 }
 
-/* 卡片 = 纸 + 1px 细线，不用投影 */
+/* 米白便签卡：参考手帐页里的浅色纸条 */
 .card {
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
-  padding: 20px;
+  box-shadow: var(--shadow-sm);
+  padding: 22px;
 }
 
 @media (max-width: 820px) {
   .card {
     padding: var(--space-16);
+    border-radius: 16px;
   }
 }
 
@@ -198,7 +357,6 @@ button {
   line-height: 1.6;
 }
 
-/* 小标题：左侧一道朱红短竖线，替代图标 */
 .section-head {
   display: flex;
   align-items: baseline;
@@ -208,10 +366,9 @@ button {
 }
 
 .section-head h2 {
-  font-size: var(--fs-md);
-  padding-left: 9px;
-  border-left: 2px solid var(--brand);
-  line-height: 1.3;
+  font-family: var(--font-hand);
+  font-size: var(--fs-lg);
+  letter-spacing: 0.01em;
 }
 
 .section-head .sub {
@@ -220,44 +377,125 @@ button {
 }
 
 .empty {
-  padding: 36px 0;
+  padding: 40px 0;
   text-align: center;
   color: var(--muted);
   font-size: var(--fs-base);
 }
 
 .empty .emoji {
-  display: none;
+  display: block;
+  font-size: 30px;
+  margin-bottom: var(--space-8);
 }
 
-/* 筛选/切换：方形 tab，选中用墨色实底，不用渐变胶囊 */
 .chip {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 7px 14px;
-  border-radius: var(--radius-sm);
+  padding: var(--space-8) 14px;
+  border-radius: var(--radius-pill);
   border: 1px solid var(--line);
-  background: transparent;
+  background: var(--cream);
   color: var(--ink-soft);
-  font-size: var(--fs-sm);
-  line-height: 1.2;
-  transition:
-    background var(--dur-fast) var(--ease-out),
-    border-color var(--dur-fast) var(--ease-out),
-    color var(--dur-fast) var(--ease-out);
+  font-size: var(--fs-base);
+  line-height: 1;
+  transition: all var(--dur-fast) var(--ease-out);
   white-space: nowrap;
 }
 
 .chip:hover {
-  border-color: var(--ink-quiet);
-  color: var(--ink);
+  border-color: var(--brand-line);
+  color: var(--brand);
 }
 
 .chip.active {
-  background: var(--ink);
-  border-color: var(--ink);
-  color: var(--surface);
+  background: var(--brand-grad);
+  border-color: transparent;
+  color: #fff;
+  box-shadow: var(--shadow-brand);
+}
+
+/* ==========================================================================
+   手帐装饰元件（全局复用）
+   ========================================================================== */
+
+/* 胶带枝叶条：参考页上下两条半透明白枝蔓胶带 */
+.tape-sprig {
+  position: relative;
+  height: 20px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='20' viewBox='0 0 220 20'%3E%3Cg fill='none' stroke='%23f5f0e2' stroke-width='1.6' stroke-linecap='round' opacity='0.9'%3E%3Cpath d='M4 10 C 40 4, 80 16, 110 10 S 180 4, 216 10'/%3E%3C/g%3E%3Cg fill='%23f5f0e2' opacity='0.9'%3E%3Cellipse cx='24' cy='6' rx='5' ry='2.4' transform='rotate(-30 24 6)'/%3E%3Cellipse cx='46' cy='13' rx='5' ry='2.4' transform='rotate(28 46 13)'/%3E%3Cellipse cx='70' cy='6' rx='5' ry='2.4' transform='rotate(-28 70 6)'/%3E%3Cellipse cx='96' cy='13' rx='5' ry='2.4' transform='rotate(28 96 13)'/%3E%3Cellipse cx='124' cy='6' rx='5' ry='2.4' transform='rotate(-28 124 6)'/%3E%3Cellipse cx='150' cy='13' rx='5' ry='2.4' transform='rotate(28 150 13)'/%3E%3Cellipse cx='176' cy='6' rx='5' ry='2.4' transform='rotate(-28 176 6)'/%3E%3Cellipse cx='200' cy='12' rx='5' ry='2.4' transform='rotate(28 200 12)'/%3E%3C/g%3E%3C/svg%3E")
+    center / 100% 100% no-repeat;
+  opacity: 0.92;
+}
+
+/* 倾斜便签标签：参考页 Read / Write 那样的米白斜纸条，手写棕字 */
+.note-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  position: relative;
+  font-family: var(--font-hand);
+  color: var(--kraft-deep);
+  background: var(--cream);
+  padding: 7px 18px;
+  border-radius: 6px;
+  box-shadow: var(--shadow-sm);
+  transform: rotate(-1.6deg);
+}
+
+.note-label--alt {
+  background: var(--kraft);
+  color: var(--cream);
+  transform: rotate(1.2deg);
+}
+
+/* 标签顶部的一小段和纸胶带 */
+.note-label::before {
+  content: '';
+  position: absolute;
+  top: -7px;
+  left: 50%;
+  width: 56px;
+  height: 13px;
+  transform: translateX(-50%) rotate(-3deg);
+  background: rgba(233, 180, 76, 0.55);
+  border-left: 1px dashed rgba(255, 255, 255, 0.5);
+  border-right: 1px dashed rgba(255, 255, 255, 0.5);
+}
+
+/* 贴纸表情：轻微旋转 + 投影，模拟手帐贴上去的小图 */
+.sticker {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  filter: drop-shadow(0 3px 4px rgba(84, 56, 42, 0.25));
+}
+
+/* 波点纸框：米白外框 + 深灰圆点，内嵌棕纸面板（参考主卡） */
+.dotted-frame {
+  position: relative;
+  background: var(--cream);
+  padding: 18px;
+  border-radius: 22px;
+  box-shadow: var(--shadow);
+  background-image: radial-gradient(circle, rgba(91, 86, 72, 0.85) 2.2px, transparent 2.8px);
+  background-size: 26px 26px;
+}
+
+.dotted-frame > .frame-body {
+  position: relative;
+  background: var(--kraft);
+  border-radius: 14px;
+  padding: 22px;
+  overflow: hidden;
+}
+
+/* 页面主标题手帐化 */
+.page h1,
+.page .me-title {
+  font-family: var(--font-hand);
+  letter-spacing: 0.01em;
 }
 
 /* ---------- 滚动条（仅桌面可见） ---------- */
@@ -269,6 +507,7 @@ button {
 
 ::-webkit-scrollbar-thumb {
   background: var(--line-scroll);
+  border-radius: var(--radius-pill);
   border: 3px solid var(--bg);
 }
 
@@ -283,105 +522,22 @@ button {
   }
 }
 
-/* 禁言提示条（打卡页和投票页共用）：左侧一道红竖线，不用整块浅红底 */
+/* 禁言提示条（打卡页和投票页共用） */
 .muted-banner {
   margin-bottom: 16px;
-  border: 1px solid var(--line);
-  border-left: 3px solid var(--brand);
-  background: var(--surface);
-  color: var(--ink-soft);
+  border: 1px solid #ecc9c2;
+  background: #fbeee9;
+  color: #8a3b38;
   font-size: 13px;
   line-height: 1.7;
 }
 
 .muted-banner strong {
   font-size: 14px;
-  color: var(--ink);
 }
 
 .muted-banner p {
   margin-top: 6px;
   font-size: 12px;
-  color: var(--muted);
-}
-
-/* ==========================================================================
-   组件库按钮统一（必须放全局：scoped 里的 :deep() 选不到按钮自身的类）
-   目标：实心墨色主按钮、方角、无投影；次按钮只留 1px 边。
-   ========================================================================== */
-
-.u-btn.el-button,
-.u-btn.van-button {
-  border-radius: var(--radius-sm);
-  box-shadow: none;
-  font-family: var(--font-sans);
-  font-weight: 500;
-  letter-spacing: 0.02em;
-  transition:
-    background-color var(--dur-fast) var(--ease-out),
-    border-color var(--dur-fast) var(--ease-out),
-    color var(--dur-fast) var(--ease-out);
-}
-
-.u-btn.el-button:active,
-.u-btn.van-button:active {
-  transform: none;
-}
-
-/* 主按钮：墨黑实底，悬停转朱红 */
-.u-btn.el-button--primary {
-  background: var(--ink);
-  border-color: var(--ink);
-  color: var(--surface);
-}
-
-.u-btn.el-button--primary:hover,
-.u-btn.el-button--primary:focus,
-.u-btn.van-button--primary:hover {
-  background: var(--brand);
-  border-color: var(--brand);
-  color: #fff;
-}
-
-.u-btn.van-button--primary {
-  background: var(--ink);
-  border-color: var(--ink);
-  color: var(--surface);
-}
-
-/* 次按钮：透明底 + 细边 */
-.u-btn.el-button.is-plain {
-  background: transparent;
-  border-color: var(--line-scroll);
-  color: var(--ink-soft);
-}
-
-.u-btn.el-button.is-plain:hover,
-.u-btn.el-button.is-plain:focus {
-  background: transparent;
-  border-color: var(--brand);
-  color: var(--brand);
-}
-
-.u-btn.van-button--default {
-  background: transparent;
-  border-color: var(--line-scroll);
-  color: var(--ink-soft);
-}
-
-/* 禁用态：灰底灰字，别用主色的浅色版（那会变成一块洗墙的砖红） */
-.u-btn.el-button.is-disabled,
-.u-btn.el-button.is-disabled:hover,
-.u-btn.van-button--disabled,
-.u-btn.van-button--disabled:active {
-  background: var(--surface-soft) !important;
-  border-color: var(--line) !important;
-  color: var(--muted) !important;
-  opacity: 1;
-}
-
-/* 标签类一律方角 */
-.el-tag,
-.van-tag {
-  border-radius: var(--radius-sm);
+  color: #a2605c;
 }
