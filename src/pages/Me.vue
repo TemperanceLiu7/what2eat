@@ -18,6 +18,7 @@ import { DEMO_STUDENT } from '@/data/db'
 import { toast } from '@/composables/useToast'
 import UField from '@/ui/UField.vue'
 import UButton from '@/ui/UButton.vue'
+import ThemeSwitcher from '@/ui/ThemeSwitcher.vue'
 
 const router = useRouter()
 
@@ -94,6 +95,15 @@ function resetAll() {
 <template>
   <div class="page me">
     <h1 class="me-title">我的</h1>
+
+    <!-- 界面主题 -->
+    <section class="card theme-card">
+      <div class="section-head">
+        <h2>界面主题</h2>
+        <span class="sub">配色与贴纸随心换</span>
+      </div>
+      <ThemeSwitcher />
+    </section>
 
     <!-- 身份验证 -->
     <section v-if="!isLoggedIn" class="card verify">
@@ -216,6 +226,14 @@ function resetAll() {
 .me-title {
   font-size: 28px;
   margin-bottom: 18px;
+}
+
+.theme-card {
+  margin-bottom: 18px;
+}
+
+.theme-card :deep(.theme-switcher) {
+  margin-top: 10px;
 }
 
 .verify {

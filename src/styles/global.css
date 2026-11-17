@@ -194,6 +194,105 @@ html:root {
   color: var(--ink-soft);
 }
 
+/* ==========================================================================
+   主题皮肤：只覆盖配色与点缀，布局 / 卡片 / 字体保持不变
+   默认：香草拿铁（:root）；海盐柠檬；芝士白桃
+   ========================================================================== */
+
+/* 海盐柠檬：浅黄纸底为主体，横幅与选框用汽水蓝 */
+html[data-theme='lemon'] {
+  --bg: #f9f4d4;
+  --surface: #fffaf0;
+  --surface-soft: #daeef5;
+  --surface-warm: linear-gradient(160deg, #fdfaf0 0%, #f9f4d4 55%, #f1ecd2 100%);
+  --kraft: #7fb8d6;
+  --kraft-deep: #5796b6;
+  --cream: #fdfaf0;
+  --leaf: #7fb8d6;
+
+  --brand: #6faecf;
+  --brand-strong: #5796b6;
+  --brand-2: #efc65e;
+  --brand-2-deep: #8a7a2f;
+  --brand-soft: #daeef5;
+  --brand-line: #a6d0e6;
+  --brand-line-soft: #cfe7f0;
+  --brand-grad: linear-gradient(135deg, #a6d0e6, #7fb8d6);
+  --brand-glow: rgba(127, 184, 214, 0.3);
+
+  --ink: #2f5a70;
+  --ink-soft: #4a6e82;
+  --ink-quiet: #5f7e8e;
+  --muted: #7c9aa8;
+
+  --line: #cfe3ec;
+  --line-scroll: #a6d0e6;
+  --line-scroll-hover: #7fb8d6;
+
+  --el-color-primary: #6faecf;
+  --el-color-primary-light-3: #8fbfd9;
+  --el-color-primary-light-5: #a9d0e4;
+  --el-color-primary-light-7: #c6e1ee;
+  --el-color-primary-light-8: #d6eaf3;
+  --el-color-primary-light-9: #daeef5;
+  --el-color-primary-dark-2: #5796b6;
+  --van-primary-color: #6faecf;
+  --van-blue: #6faecf;
+  --el-input-bg-color: #fdfaf0;
+  --el-input-border-color: #cfe3ec;
+  --el-input-text-color: #2f5a70;
+  --el-input-placeholder-color: #7c9aa8;
+  --el-input-hover-border-color: #a6d0e6;
+  --el-input-focus-border-color: #6faecf;
+}
+
+/* 芝士白桃：浅粉纸底 + 桃粉 */
+html[data-theme='peach'] {
+  --bg: #feebed;
+  --surface: #fff3f3;
+  --surface-soft: #fbe3e6;
+  --surface-warm: linear-gradient(160deg, #fff3f3 0%, #feebed 55%, #fbe0e2 100%);
+  --kraft: #e88b89;
+  --kraft-deep: #c96664;
+  --cream: #fff3f3;
+  --leaf: #f69e9d;
+
+  --brand: #e08280;
+  --brand-strong: #c96664;
+  --brand-2: #fbdca5;
+  --brand-2-deep: #a8844a;
+  --brand-soft: #fbe3e6;
+  --brand-line: #f3b9be;
+  --brand-line-soft: #fad6d9;
+  --brand-grad: linear-gradient(135deg, #f0a3a1, #e08280);
+  --brand-glow: rgba(246, 158, 157, 0.3);
+
+  --ink: #6e4148;
+  --ink-soft: #8a5a60;
+  --ink-quiet: #9a6b70;
+  --muted: #a98286;
+
+  --line: #f3d2d5;
+  --line-scroll: #f8c3cb;
+  --line-scroll-hover: #f69e9d;
+
+  --el-color-primary: #e08280;
+  --el-color-primary-light-3: #eba9a7;
+  --el-color-primary-light-5: #f2c2c1;
+  --el-color-primary-light-7: #f8d9d8;
+  --el-color-primary-light-8: #fbe5e5;
+  --el-color-primary-light-9: #fbe3e6;
+  --el-color-primary-dark-2: #c96664;
+  --van-primary-color: #e08280;
+  --van-blue: #e08280;
+  --el-input-bg-color: #fff3f3;
+  --el-input-border-color: #f3d2d5;
+  --el-input-text-color: #6e4148;
+  --el-input-placeholder-color: #a98286;
+  --el-input-hover-border-color: #f3b9be;
+  --el-input-focus-border-color: #e08280;
+}
+
 a {
   color: inherit;
   text-decoration: none;

@@ -15,6 +15,25 @@ import { state as mockState } from '@/data/db'
 
 const USER_KEY = 'what2eat:user'
 const EATEN_KEY = 'what2eat:eaten'
+const THEME_KEY = 'what2eat:theme'
+
+/** 可选主题：latte 香草拿铁（默认）/ lemon 海盐柠檬 / peach 芝士白桃 */
+export const THEMES = ['latte', 'lemon', 'peach']
+
+export const THEME_META = {
+  latte: { name: '香草拿铁', emoji: '☕', bg: '#aab59a' },
+  lemon: { name: '海盐柠檬', emoji: '🍋', bg: '#f9f4d4' },
+  peach: { name: '芝士白桃', emoji: '🍑', bg: '#feebed' },
+}
+
+function readTheme() {
+  try {
+    const t = localStorage.getItem(THEME_KEY)
+    return THEMES.includes(t) ? t : 'latte'
+  } catch {
+    return 'latte'
+  }
+}
 
 function readUser() {
   try {
@@ -43,7 +62,29 @@ export const ui = reactive({
   eaten: readEaten(), // 「最近抽到」的本地环，纯 UI 状态
   preferences: null, // 个人饮食偏好画像
   loading: false,
+  theme: readTheme(), // 界面主题，持久化在本地
 })
+
+function applyTheme(theme) {
+  document.documentElement.dataset.theme = theme
+  const meta = document.querySelector('meta[name="theme-color"]')
+  if (meta && THEME_META[theme]?.bg) meta.setAttribute('content', THEME_META[theme].bg)
+}
+
+// 启动时把主题写到 <html data-theme>，CSS 变量皮肤据此生效
+if (typeof document !== 'undefined') applyTheme(ui.theme)
+
+/** 切换主题并持久化；未知主题名忽略 */
+export function setTheme(theme) {
+  if (!THEMES.includes(theme)) return
+  ui.theme = theme
+  applyTheme(theme)
+  try {
+    localStorage.setItem(THEME_KEY, theme)
+  } catch {
+    /* 无痕模式下写不进去，不影响使用 */
+  }
+}
 
 export const isLoggedIn = computed(() =>
   Boolean(ui.user?.username || ui.user?.studentId || ui.user?.studentId === 0),

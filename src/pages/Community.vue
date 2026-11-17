@@ -132,7 +132,7 @@ h1 {
   width: 52px;
   height: 13px;
   transform: rotate(3deg);
-  background: rgba(125, 145, 104, 0.45);
+  background: color-mix(in srgb, var(--leaf) 45%, transparent);
   border-left: 1px dashed rgba(255, 255, 255, 0.5);
   border-right: 1px dashed rgba(255, 255, 255, 0.5);
   border-radius: 2px;
@@ -180,10 +180,10 @@ h1 {
 }
 
 .entry.brand {
-  background: linear-gradient(135deg, #f6e7d6, var(--surface));
+  background: linear-gradient(135deg, var(--brand-soft), var(--surface));
 }
 .entry.warm {
-  background: linear-gradient(135deg, #fbf1d8, var(--surface));
+  background: linear-gradient(135deg, var(--brand-line-soft), var(--surface));
 }
 
 .more {

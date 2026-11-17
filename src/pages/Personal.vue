@@ -191,7 +191,7 @@ h1 {
   width: 56px;
   height: 13px;
   transform: rotate(-2deg);
-  background: rgba(181, 103, 63, 0.35);
+  background: color-mix(in srgb, var(--brand) 35%, transparent);
   border-left: 1px dashed rgba(255, 255, 255, 0.5);
   border-right: 1px dashed rgba(255, 255, 255, 0.5);
   border-radius: 2px;
@@ -285,13 +285,13 @@ h1 {
 }
 
 .entry.brand {
-  background: linear-gradient(135deg, #f6e7d6, var(--surface));
+  background: linear-gradient(135deg, var(--brand-soft), var(--surface));
 }
 .entry.warm {
-  background: linear-gradient(135deg, #fbf1d8, var(--surface));
+  background: linear-gradient(135deg, var(--brand-line-soft), var(--surface));
 }
 .entry.soft {
-  background: linear-gradient(135deg, #ece1c4, var(--surface));
+  background: linear-gradient(135deg, var(--surface-soft), var(--surface));
 }
 
 .pref {
@@ -387,8 +387,8 @@ h1 {
 
 .lock {
   font-size: 11px;
-  color: #8a6a2f;
-  background: #fbf1d8;
+  color: var(--brand-2-deep);
+  background: var(--brand-line-soft);
   border-radius: 999px;
   padding: 2px 8px;
 }

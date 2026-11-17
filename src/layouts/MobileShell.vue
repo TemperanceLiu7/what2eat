@@ -8,8 +8,8 @@ import { isLoggedIn, isVerified } from '@/stores/app'
       <router-link to="/" class="m-brand">🍜 今天吃什么</router-link>
       <router-link :to="isLoggedIn ? '/me' : '/login'" class="m-user">
         <van-tag v-if="isVerified" type="success" round>已认证</van-tag>
-        <van-tag v-else-if="isLoggedIn" round color="#f6e7d6" text-color="#b5673f">未核验</van-tag>
-        <van-tag v-else round color="#ece1c4" text-color="#6f5544">登录</van-tag>
+        <van-tag v-else-if="isLoggedIn" round color="var(--brand-soft)" text-color="var(--brand)">未核验</van-tag>
+        <van-tag v-else round color="var(--surface-soft)" text-color="var(--ink-soft)">登录</van-tag>
       </router-link>
     </header>
 
@@ -17,7 +17,7 @@ import { isLoggedIn, isVerified } from '@/stores/app'
       <router-view />
     </main>
 
-    <van-tabbar route :border="false" active-color="#9a5230" inactive-color="#8d7663" safe-area-inset-bottom>
+    <van-tabbar route :border="false" active-color="var(--brand-strong)" inactive-color="var(--muted)" safe-area-inset-bottom>
       <van-tabbar-item replace to="/personal" icon="home-o">个人</van-tabbar-item>
       <van-tabbar-item replace to="/community" icon="friends-o">社区</van-tabbar-item>
       <van-tabbar-item replace to="/me" icon="user-o">我的</van-tabbar-item>
@@ -39,9 +39,9 @@ import { isLoggedIn, isVerified } from '@/stores/app'
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: rgba(170, 181, 154, 0.9);
+  background: color-mix(in srgb, var(--bg) 90%, transparent);
   backdrop-filter: saturate(160%) blur(12px);
-  border-bottom: 1px dashed rgba(244, 237, 217, 0.6);
+  border-bottom: 1px dashed var(--brand-line-soft);
   padding-top: env(safe-area-inset-top);
 }
 

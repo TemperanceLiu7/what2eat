@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { isLoggedIn, isVerified, ui } from '@/stores/app'
+import ThemeSwitcher from '@/ui/ThemeSwitcher.vue'
 
 const route = useRoute()
 const active = computed(() => route.path)
@@ -22,6 +23,8 @@ const active = computed(() => route.path)
           <el-menu-item index="/community">社区</el-menu-item>
           <el-menu-item index="/me">我的</el-menu-item>
         </el-menu>
+
+        <ThemeSwitcher class="pc-theme" />
 
         <router-link :to="isLoggedIn ? '/me' : '/login'" class="pc-user">
           <el-tag v-if="isVerified" type="success" effect="light" round>
@@ -54,9 +57,9 @@ const active = computed(() => route.path)
   position: sticky;
   top: 0;
   z-index: 100;
-  background: rgba(170, 181, 154, 0.86);
+  background: color-mix(in srgb, var(--bg) 86%, transparent);
   backdrop-filter: saturate(160%) blur(12px);
-  border-bottom: 1px dashed rgba(244, 237, 217, 0.6);
+  border-bottom: 1px dashed var(--brand-line-soft);
 }
 
 .pc-header-inner {
@@ -121,6 +124,10 @@ const active = computed(() => route.path)
   background: var(--kraft) !important;
   color: var(--cream) !important;
   font-weight: 700;
+}
+
+.pc-theme {
+  flex-shrink: 0;
 }
 
 .pc-user {

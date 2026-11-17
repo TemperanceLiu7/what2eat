@@ -16,10 +16,24 @@ const rolling = ref(false)
 // 抽签序号：让「同一道菜再次中签」也能重播入场动画（key 里带上它）
 const drawSeq = ref(0)
 
+// 各主题横幅贴纸（右上角 / 左下角）与抽签彩带配色
+const STICKERS = {
+  latte: { top: '☕', bottom: '🍰' },
+  lemon: { top: '🍋', bottom: '🥤' },
+  peach: { top: '🍑', bottom: '🍨' },
+}
+const CONFETTI_COLORS = {
+  latte: ['#b5673f', '#e9b44c', '#f4edd9', '#8a5a44', '#7d9168', '#e8913f'],
+  lemon: ['#6faecf', '#efc65e', '#fdfaf0', '#5796b6', '#7fb8d6', '#a6d0e6'],
+  peach: ['#e08280', '#fbdca5', '#fff3f3', '#c96664', '#f69e9d', '#f8c3cb'],
+}
+const stickerTop = computed(() => STICKERS[ui.theme]?.top || STICKERS.latte.top)
+const stickerBottom = computed(() => STICKERS[ui.theme]?.bottom || STICKERS.latte.bottom)
+
 const confetti = ref([])
 let confettiSeq = 0
 function burstConfetti() {
-  const colors = ['#b5673f', '#e9b44c', '#f4edd9', '#8a5a44', '#7d9168', '#e8913f']
+  const colors = CONFETTI_COLORS[ui.theme] || CONFETTI_COLORS.latte
   confetti.value = Array.from({ length: 24 }, (_, i) => ({
     id: ++confettiSeq,
     left: 6 + Math.random() * 88,
@@ -156,8 +170,8 @@ async function enableShake() {
         <div class="frame-body">
           <span class="tape-sprig tape-top" aria-hidden="true"></span>
           <span class="tape-sprig tape-bottom" aria-hidden="true"></span>
-          <span class="sticker sticker-cup" aria-hidden="true">☕</span>
-          <span class="sticker sticker-cake" aria-hidden="true">🍰</span>
+          <span class="sticker sticker-cup" aria-hidden="true">{{ stickerTop }}</span>
+          <span class="sticker sticker-cake" aria-hidden="true">{{ stickerBottom }}</span>
           <div class="banner-copy">
             <div class="banner-tag"><span class="tag-flash">⚡</span> 校园专属 · 每日精选</div>
             <h1>今天吃<span>什么</span>？</h1>
@@ -326,9 +340,9 @@ async function enableShake() {
 .home {
   --draw-dur: 0.52s;
   --rise-dur: 0.38s;
-  --hot: #a85a33;
-  --hot-deep: #8a4527;
-  --gold: #e9b44c;
+  --hot: var(--brand-strong);
+  --hot-deep: var(--kraft-deep);
+  --gold: var(--brand-2);
 }
 
 /* ---------- 手帐主卡（波点纸框 + 棕纸内页） ---------- */
@@ -471,7 +485,7 @@ async function enableShake() {
   height: 52px;
   font-size: 26px;
   border-radius: 18px;
-  background: linear-gradient(145deg, #f6e7d6, #ecd9bd);
+  background: linear-gradient(145deg, var(--brand-soft), var(--surface-soft));
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 4px 10px rgba(138, 90, 68, 0.14);
   transition: all var(--dur-fast) var(--ease-out);
 }
@@ -549,7 +563,7 @@ async function enableShake() {
   z-index: 0;
   pointer-events: none;
   opacity: 0;
-  background: radial-gradient(circle at 50% 46%, rgba(181, 103, 63, 0.2) 0%, transparent 62%);
+  background: radial-gradient(circle at 50% 46%, var(--brand-glow) 0%, transparent 62%);
 }
 .slot::after {
   content: '';
@@ -614,7 +628,7 @@ async function enableShake() {
   flex: 0 0 132px;
   height: 132px;
   border-radius: 16px;
-  background: linear-gradient(145deg, #f6e7d6, #ecd9bd);
+  background: linear-gradient(145deg, var(--brand-soft), var(--surface-soft));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -671,7 +685,7 @@ async function enableShake() {
   border: 1px solid transparent;
 }
 .rtag.red { color: var(--hot); background: var(--brand-soft); border-color: var(--brand-line-soft); }
-.rtag.orange { color: var(--brand-2-deep); background: #fbf1d8; border-color: #ecd9a8; }
+.rtag.orange { color: var(--brand-2-deep); background: var(--brand-line-soft); border-color: var(--brand-line); }
 
 .result-bottom {
   display: flex;
@@ -801,7 +815,7 @@ async function enableShake() {
 .rank-no-3 { background: linear-gradient(135deg, #d9a97f, #c77a45); color: #fff; }
 .rank-thumb {
   flex: 0 0 38px; height: 38px; border-radius: 10px;
-  background: linear-gradient(145deg, #f6e7d6, #ecd9bd);
+  background: linear-gradient(145deg, var(--brand-soft), var(--surface-soft));
   display: inline-flex; align-items: center; justify-content: center; font-size: 20px;
 }
 .rank-mid { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
