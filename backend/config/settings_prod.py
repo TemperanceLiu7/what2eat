@@ -11,6 +11,8 @@
 """
 from __future__ import annotations
 
+import os
+
 from django.core.exceptions import ImproperlyConfigured
 
 from .settings import *  # noqa: F401,F403
@@ -18,11 +20,58 @@ from .settings import env_bool, env_int, env_list
 
 DEBUG = False
 
+# ---------------------------------------------------------------------------
+# 平台健康检查 & 平台域名
+# ---------------------------------------------------------------------------
+# Railway 的存活探针固定用 Host: healthcheck.railway.app 打容器，和业务域名无关；
+# 白名单里只写业务域名时，健康检查会被 DisallowedHost 拦掉，日志里表现为一串
+# "Invalid HTTP_HOST header"，而浏览器访问反而正常（或平台一直判定实例不健康）。
+# 这里把平台相关主机名自动并入，避免每次换平台/换域名都要回去改变量。
+_PLATFORM_HOSTS = [
+    "healthcheck.railway.app",
+    "healthcheck.railway.internal",
+    "healthcheck.railway.com",
+    "localhost",
+    "127.0.0.1",
+    "[::1]",
+]
+
+# 平台注入的域名（Railway: RAILWAY_PUBLIC_DOMAIN / RENDER_EXTERNAL_HOSTNAME 等）
+for _host_var in (
+    "RAILWAY_PUBLIC_DOMAIN",
+    "RAILWAY_PRIVATE_DOMAIN",
+    "RENDER_EXTERNAL_HOSTNAME",
+    "FLY_APP_NAME",
+    "HOSTNAME",
+):
+    _host_val = (os.environ.get(_host_var) or "").strip()
+    if _host_val:
+        _PLATFORM_HOSTS.append(_host_val)
+
+# 平台域名后缀通配（Django 支持以点开头的后缀匹配任意子域名）。
+# 只覆盖 PaaS 分配给本服务的域名空间，不影响自有域名的白名单约束。
+_PLATFORM_HOSTS += [".up.railway.app", ".railway.app", ".onrender.com"]
+
+ALLOWED_HOSTS = list(dict.fromkeys(list(ALLOWED_HOSTS) + _PLATFORM_HOSTS))  # noqa: F405
+
+# 反向代理下 Django 生成绝对地址、后台登录的 CSRF 校验也要认平台域名
+_extra_csrf = []
+for _host in ALLOWED_HOSTS:
+    if not _host.startswith(".") and "." in _host:
+        _extra_csrf.append(f"https://{_host}")
+_extra_csrf += ["https://*.up.railway.app", "https://*.onrender.com"]
+CSRF_TRUSTED_ORIGINS = list(  # noqa: F405
+    dict.fromkeys(list(CSRF_TRUSTED_ORIGINS) + _extra_csrf)  # noqa: F405
+)
+
 if not SECRET_KEY or SECRET_KEY == "dev-only-insecure-secret-key-please-change-me":  # noqa: F405
     raise ImproperlyConfigured("生产环境必须设置环境变量 SECRET_KEY")
 
-if not ALLOWED_HOSTS:  # noqa: F405
-    raise ImproperlyConfigured("生产环境必须设置环境变量 ALLOWED_HOSTS")
+if not env_list("ALLOWED_HOSTS", ()):
+    raise ImproperlyConfigured(
+        "生产环境必须设置环境变量 ALLOWED_HOSTS（业务域名，逗号分隔；"
+        "平台健康检查用的主机名已由代码自动并入，无需手写）"
+    )
 
 if DATABASES["default"]["ENGINE"] not in {  # noqa: F405
     "django.db.backends.mysql",
@@ -35,40 +84,13 @@ if DATABASES["default"]["ENGINE"] not in {  # noqa: F405
 
 # 数据库地址不能是「本机」：平台上的变量引用写错时（服务名对不上、行尾多空格），
 # 平台不会报错，只会把变量解析成空字符串，settings 于是退回 DB_HOST 默认值 127.0.0.1，
-# 启动时报一串 connection refused，很难看出其实是变量没生效。这里直接拦下来，
-# 并把容器「实际收到了哪些变量名」一起打出来——只打名字和长度，不打值。
+# 启动时报一串 connection refused，很难看出其实是变量没生效。这里直接拦下来。
 if DATABASES["default"].get("HOST", "") in {"", "127.0.0.1", "localhost"}:  # noqa: F405
-    import os
-
-    _url_keys = (
-        "DATABASE_URL",
-        "DATABASE_PUBLIC_URL",
-        "POSTGRES_URL",
-        "POSTGRESQL_URL",
-        "DB_URL",
-    )
-    _url_states = []
-    for _k in _url_keys:
-        _v = os.environ.get(_k)
-        _url_states.append(
-            f"{_k}=不存在" if _v is None else f"{_k}=长度{len(_v)}"
-        )
-    _url_state = "，".join(_url_states)
-
-    _db_keys = sorted(
-        k
-        for k in os.environ
-        if any(t in k.upper() for t in ("DATABASE", "PG", "DB_"))
-    )
-
     raise ImproperlyConfigured(
-        f"生产环境的数据库地址是 {DATABASES['default'].get('HOST', '')!r}，"
-        f"说明容器没拿到任何可用的连接串（{_url_state}）；"
-        f"容器里实际收到的数据库相关变量名（带引号，注意有没有多余空格）：{_db_keys or '（一个都没有）'}。"
-        "正解：Railway → 打开 Postgres 服务 → Variables → 复制 DATABASE_URL 的**值**，"
-        "回到本服务 Variables → 右上角 RAW Editor，按 `DATABASE_URL=postgresql://...` 整行粘贴后保存"
-        "（不要手打 ${{...}} 引用，不要加引号，结尾不要带空格）；同时确认 DB_ENGINE=postgres。"
-        "也支持 DATABASE_PUBLIC_URL / POSTGRES_URL / DB_URL，以及 PGHOST+PGPASSWORD 这类分项变量。"
+        "生产环境的数据库地址是 127.0.0.1/localhost，说明容器里没拿到 DATABASE_URL。"
+        "请检查平台变量：DATABASE_URL 必须是数据库服务的引用而不是手打的值"
+        "（Railway：Variables → Add Reference → 选 Postgres 服务 → DATABASE_URL），"
+        "或显式填完整连接串；同时确认 DB_ENGINE=postgres。"
     )
 
 # 跨域只认白名单（不做通配）
